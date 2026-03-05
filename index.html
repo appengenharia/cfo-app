@@ -372,7 +372,7 @@
            createUserWithEmailAndPassword, updatePassword }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
-           updateDoc, deleteDoc, serverTimestamp, enableIndexedDbPersistence, query, orderBy }
+           updateDoc, deleteDoc, serverTimestamp, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const SENHA_PADRAO = "user123";
@@ -692,7 +692,7 @@
       obrasSnap.forEach(d=>{ obrasMap[d.id]=d.data().nome; obrasMapRender[d.id]=d.data().nome; });
 
       const snap=await getDocs(query(collection(db,"usuarios"),orderBy("criadoEm","desc")));
-     allUsers=snap.docs.map(d=>{
+      allUsers=snap.docs.map(d=>{
         const data=d.data();
         return {
           id:d.id,
@@ -772,6 +772,16 @@
   }
 
   // ── AUTH STATE ──
+  // Timeout de segurança — esconde loading após 8s mesmo se Firebase travar
+  setTimeout(() => {
+    const ls = $("loadingScreen");
+    if(ls && ls.style.display !== "none") {
+      ls.style.display = "none";
+      $("loginPage").classList.remove("hidden");
+      $("topbar").classList.remove("hidden");
+    }
+  }, 8000);
+
   onAuthStateChanged(auth, async (user) => {
     $("loadingScreen").style.display="none";
     $("topbar").classList.remove("hidden");
@@ -1750,5 +1760,3 @@
 </script>
 </body>
 </html>
-
- 
