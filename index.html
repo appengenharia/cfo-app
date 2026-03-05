@@ -149,6 +149,12 @@
     .toast.err{background:var(--danger);}
     @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
     @media(min-width:768px){.toast{bottom:24px;}}
+    /* ALOCAÇÃO CHECKBOX */
+    .obra-check-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .18s;}
+    .obra-check-item:hover{border-color:var(--brand);background:#f0f7ff;}
+    .obra-check-item.checked{border-color:var(--brand);background:#f0f7ff;}
+    .obra-check-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand);cursor:pointer;flex-shrink:0;}
+    .obra-check-item label{cursor:pointer;font-size:.9rem;font-weight:500;}
     /* TABELA DASHBOARD */
     .dash-table{width:100%;border-collapse:collapse;}
     .dash-table th{text-align:left;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid var(--border);}
@@ -441,6 +447,7 @@
           <select id="userObra">
             <option value="">— Sem alocação por enquanto —</option>
           </select>
+          <p style="font-size:.78rem;color:var(--muted);margin-top:6px">💡 Você pode alocar em mais obras depois pela lista de colaboradores.</p>
           <div style="margin-top:16px">
             <button class="btn btn-primary full" id="btnSaveUser" onclick="App.saveUser()">💾 Cadastrar Colaborador</button>
           </div>
@@ -763,7 +770,9 @@
       await signOut(authAux);
       await setDoc(doc(db,"usuarios",cred.user.uid),{
         uid:cred.user.uid, nome, email, role,
-        obra_id:obra||"", ativo:true, primeiro_acesso:true,
+        obra_id: obra||"",           // compatibilidade legada
+        obras:   obra ? [obra] : [], // array de obras (novo)
+        ativo:true, primeiro_acesso:true,
         criadoPor:currentUser.uid, criadoEm:serverTimestamp()
       });
       $("userNome").value=""; $("userEmail").value=""; $("userObra").value="";
@@ -778,6 +787,7 @@
     } finally{ btn.disabled=false; btn.textContent="💾 Cadastrar Colaborador"; }
   }
 
+  let obrasMapRender = {};
   async function loadUsers() {
     const el=$("userList"); if(!el) return;
     el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>`;
@@ -785,7 +795,7 @@
       // carrega obras para resolver nomes
       const obrasSnap=await getDocs(collection(db,"obras"));
       const obrasMap={};
-      obrasSnap.forEach(d=>{ obrasMap[d.id]=d.data().nome; });
+      obrasSnap.forEach(d=>{ obrasMap[d.id]=d.data().nome; obrasMapRender[d.id]=d.data().nome; });
 
       const snap=await getDocs(query(collection(db,"usuarios"),orderBy("criadoEm","desc")));
       allUsers=snap.docs.map(d=>{
@@ -832,10 +842,14 @@
       div.innerHTML=`
         <div class="list-item-info">
           <div class="list-item-name">${u.nome||"—"}</div>
-          <div class="list-item-sub">${u.email}${u.obra_nome?" · 🏗️ "+u.obra_nome:""}</div>
+          <div class="list-item-sub">${u.email}</div>
+          <div class="list-item-sub" style="margin-top:3px">${(u.obras&&u.obras.length?u.obras.map(id=>obrasMapRender[id]||id).filter(Boolean).map(n=>"🏗️ "+n).join(" · "):"Sem alocação")}</div>
         </div>
         ${badges}
-        <div class="list-item-actions">${acaoBtn}</div>`;
+        <div class="list-item-actions">
+          <button class="btn btn-outline sm" onclick="App.openAlocModal('${u.id}','${u.nome||u.email}')">🏗️ Alocar</button>
+          ${acaoBtn}
+        </div>`;
       el.appendChild(div);
     });
   }
@@ -902,11 +916,12 @@
       sel.innerHTML  = `<option value="">— Selecione a obra —</option>`;
       if(filt) filt.innerHTML = `<option value="">Todas as obras</option>`;
       const prof = currentRole !== "ADMIN" ? await loadProfile(currentUser.uid) : null;
+      const obrasDoColab = prof?.obras?.length ? prof.obras : (prof?.obra_id ? [prof.obra_id] : []);
       snap.forEach(d => {
         const o = d.data();
         if(o.ativa === false) return;
-        // colaborador só vê sua obra
-        if(currentRole !== "ADMIN" && d.id !== prof?.obra_id) return;
+        // colaborador só vê suas obras
+        if(currentRole !== "ADMIN" && !obrasDoColab.includes(d.id)) return;
         const opt1 = document.createElement("option");
         opt1.value = d.id; opt1.textContent = o.nome;
         sel.appendChild(opt1);
@@ -1313,10 +1328,11 @@
 
       if(currentRole !== "ADMIN") {
         // Colaborador: vê só sua(s) obra(s)
+        const obrasDoColab = prof?.obras?.length ? prof.obras : (prof?.obra_id ? [prof.obra_id] : []);
         selObra.innerHTML = `<option value="">Todas as minhas obras</option>`;
         obrasSnap.forEach(d => {
           if(d.data().ativa === false) return;
-          if(d.id !== prof?.obra_id) return; // por ora, uma obra
+          if(!obrasDoColab.includes(d.id)) return;
           const o = document.createElement("option");
           o.value = d.id; o.textContent = d.data().nome;
           selObra.appendChild(o);
@@ -1390,14 +1406,13 @@
       let lancs = snap.docs.map(d => d.data());
 
       if(currentRole !== "ADMIN") {
-        // Colaborador: filtra pela sua obra
         const prof = await loadProfile(currentUser.uid);
+        const obrasDoColab = prof?.obras?.length ? prof.obras : (prof?.obra_id ? [prof.obra_id] : []);
         if(obraFilt) {
           lancs = lancs.filter(l => l.obra_id === obraFilt);
-        } else if(prof?.obra_id) {
-          lancs = lancs.filter(l => l.obra_id === prof.obra_id);
+        } else {
+          lancs = lancs.filter(l => obrasDoColab.includes(l.obra_id));
         }
-        // Se selecionou "Todos da obra" mostra todos, senão filtra por ele
         if(colabFilt) lancs = lancs.filter(l => l.colaborador_uid === colabFilt);
       } else {
         if(obraFilt)  lancs = lancs.filter(l => l.obra_id === obraFilt);
@@ -1458,11 +1473,75 @@
     loadDashboard();
   }
 
+
+  // ══════════════════════════════
+  // ALOCAÇÃO EM OBRAS
+  // ══════════════════════════════
+  let alocUserId = null;
+
+  async function openAlocModal(userId, userName) {
+    alocUserId = userId;
+    $("alocTitle").textContent = "Alocar em Obras";
+    $("alocSubtitle").textContent = `Selecione as obras de ${userName}:`;
+    const lista = $("alocObrasList");
+    lista.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted)">Carregando...</div>`;
+    $("modalAlocacao").classList.remove("hidden");
+    try {
+      // Busca obras ativas
+      const obrasSnap = await getDocs(collection(db,"obras"));
+      // Busca obras atuais do colaborador
+      const userDoc = await getDoc(doc(db,"usuarios",userId));
+      const obrasAtuais = userDoc.exists() ? (userDoc.data().obras || []) : [];
+      lista.innerHTML = "";
+      obrasSnap.forEach(d => {
+        if(d.data().ativa === false) return;
+        const checked = obrasAtuais.includes(d.id);
+        const item = document.createElement("div");
+        item.className = "obra-check-item" + (checked ? " checked" : "");
+        item.innerHTML = `
+          <input type="checkbox" id="chk_${d.id}" value="${d.id}" ${checked?"checked":""}>
+          <label for="chk_${d.id}">${d.data().nome}</label>`;
+        item.querySelector("input").addEventListener("change", e => {
+          item.classList.toggle("checked", e.target.checked);
+        });
+        lista.appendChild(item);
+      });
+      if(!lista.children.length) {
+        lista.innerHTML = `<p style="color:var(--muted);font-size:.88rem;text-align:center">Nenhuma obra ativa cadastrada.</p>`;
+      }
+    } catch(e){ lista.innerHTML = `<p style="color:var(--danger)">Erro ao carregar obras.</p>`; }
+  }
+
+  async function saveAlocacao() {
+    if(!alocUserId) return;
+    const checkboxes = $("alocObrasList").querySelectorAll("input[type=checkbox]");
+    const obrasSel = Array.from(checkboxes).filter(c=>c.checked).map(c=>c.value);
+    const obraId   = obrasSel.length > 0 ? obrasSel[0] : ""; // compatibilidade legada
+    try {
+      await updateDoc(doc(db,"usuarios",alocUserId),{
+        obras:   obrasSel,
+        obra_id: obraId
+      });
+      toast("Alocação atualizada! 🏗️");
+      closeAlocModal();
+      await loadUsers();
+      // Atualiza selects de obras nos formulários
+      await fillObraSelect();
+      await fillLancObras();
+    } catch(e){ toast("Erro: "+e.message, false); }
+  }
+
+  function closeAlocModal() {
+    $("modalAlocacao").classList.add("hidden");
+    alocUserId = null;
+  }
+
   window.App = {
     login, logout, togglePass, goTab, adminTab,
     changePassword,
     saveObra, loadObras, toggleObra,
     saveUser, loadUsers, filterUsers, toggleUser,
+    openAlocModal, saveAlocacao, closeAlocModal,
     toggleReemb, onFileSelect, removeFile,
     saveLanc, cancelLanc, editLanc, deleteLanc, loadLancs,
     syncPendingLancs,
