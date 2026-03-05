@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -900,13 +901,12 @@
       const snap = await getDocs(collection(db,"obras"));
       sel.innerHTML  = `<option value="">— Selecione a obra —</option>`;
       if(filt) filt.innerHTML = `<option value="">Todas as obras</option>`;
+      const prof = currentRole !== "ADMIN" ? await loadProfile(currentUser.uid) : null;
       snap.forEach(d => {
         const o = d.data();
         if(o.ativa === false) return;
         // colaborador só vê sua obra
-        if(currentRole !== "ADMIN" && currentUser) {
-          // será filtrado pelo perfil
-        }
+        if(currentRole !== "ADMIN" && d.id !== prof?.obra_id) return;
         const opt1 = document.createElement("option");
         opt1.value = d.id; opt1.textContent = o.nome;
         sel.appendChild(opt1);
@@ -917,12 +917,9 @@
         }
       });
       // pré-seleciona obra do colaborador
-      if(currentRole !== "ADMIN") {
-        const prof = await loadProfile(currentUser.uid);
-        if(prof?.obra_id) {
-          sel.value = prof.obra_id;
-          if(filt) filt.value = prof.obra_id;
-        }
+      if(currentRole !== "ADMIN" && prof?.obra_id) {
+        sel.value = prof.obra_id;
+        if(filt) filt.value = prof.obra_id;
       }
     } catch(_){}
   }
@@ -1311,35 +1308,49 @@
     const selColab = $("dashColab");
     if(!selObra) return;
     try {
-      // Obras — admin vê todas, colaborador só a sua
       const obrasSnap = await getDocs(collection(db,"obras"));
-      selObra.innerHTML = `<option value="">Todas as obras</option>`;
-      obrasSnap.forEach(d => {
-        if(d.data().ativa === false) return;
-        if(currentRole !== "ADMIN") return; // colaborador não escolhe obra
-        const o = document.createElement("option");
-        o.value = d.id; o.textContent = d.data().nome;
-        selObra.appendChild(o);
-      });
+      const prof = currentRole !== "ADMIN" ? await loadProfile(currentUser.uid) : null;
 
-      // Colaborador: pré-seleciona sua obra e esconde filtro de colab
       if(currentRole !== "ADMIN") {
-        const prof = await loadProfile(currentUser.uid);
-        if(prof?.obra_id) selObra.value = prof.obra_id;
-        selObra.disabled = true;
-        $("dashColabWrap").style.display = "none";
+        // Colaborador: vê só sua(s) obra(s)
+        selObra.innerHTML = `<option value="">Todas as minhas obras</option>`;
+        obrasSnap.forEach(d => {
+          if(d.data().ativa === false) return;
+          if(d.id !== prof?.obra_id) return; // por ora, uma obra
+          const o = document.createElement("option");
+          o.value = d.id; o.textContent = d.data().nome;
+          selObra.appendChild(o);
+        });
+        selObra.disabled = false;
+        // Filtro de colaborador — pré-seleciona ele mesmo
+        $("dashColabWrap").style.display = "";
+        if(selColab) {
+          selColab.innerHTML = `
+            <option value="">Todos da obra</option>
+            <option value="${currentUser.uid}" selected>${prof?.nome || currentUser.email}</option>`;
+        }
       } else {
+        // Admin: vê todas as obras
+        selObra.innerHTML = `<option value="">Todas as obras</option>`;
+        obrasSnap.forEach(d => {
+          if(d.data().ativa === false) return;
+          const o = document.createElement("option");
+          o.value = d.id; o.textContent = d.data().nome;
+          selObra.appendChild(o);
+        });
         selObra.disabled = false;
         $("dashColabWrap").style.display = "";
         // Preenche colaboradores
         const usersSnap = await getDocs(collection(db,"usuarios"));
-        selColab.innerHTML = `<option value="">Todos</option>`;
-        usersSnap.forEach(d => {
-          if(d.data().ativo === false) return;
-          const o = document.createElement("option");
-          o.value = d.data().uid; o.textContent = d.data().nome || d.data().email;
-          selColab.appendChild(o);
-        });
+        if(selColab) {
+          selColab.innerHTML = `<option value="">Todos</option>`;
+          usersSnap.forEach(d => {
+            if(d.data().ativo === false) return;
+            const o = document.createElement("option");
+            o.value = d.data().uid; o.textContent = d.data().nome || d.data().email;
+            selColab.appendChild(o);
+          });
+        }
       }
     } catch(_){}
   }
@@ -1378,11 +1389,16 @@
       let snap = await getDocs(query(collection(db,"lancamentos"), orderBy("criadoEm","desc")));
       let lancs = snap.docs.map(d => d.data());
 
-      // Colaborador só vê sua obra
       if(currentRole !== "ADMIN") {
+        // Colaborador: filtra pela sua obra
         const prof = await loadProfile(currentUser.uid);
-        if(prof?.obra_id) lancs = lancs.filter(l => l.obra_id === prof.obra_id);
-        lancs = lancs.filter(l => l.colaborador_uid === currentUser.uid || true); // vê todos da obra
+        if(obraFilt) {
+          lancs = lancs.filter(l => l.obra_id === obraFilt);
+        } else if(prof?.obra_id) {
+          lancs = lancs.filter(l => l.obra_id === prof.obra_id);
+        }
+        // Se selecionou "Todos da obra" mostra todos, senão filtra por ele
+        if(colabFilt) lancs = lancs.filter(l => l.colaborador_uid === colabFilt);
       } else {
         if(obraFilt)  lancs = lancs.filter(l => l.obra_id === obraFilt);
         if(colabFilt) lancs = lancs.filter(l => l.colaborador_uid === colabFilt);
