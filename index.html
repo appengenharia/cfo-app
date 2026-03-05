@@ -17,15 +17,12 @@
     }
     html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
     .hidden{display:none !important;}
-    /* TOPBAR */
     .topbar{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;background:var(--brand2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;box-shadow:0 2px 12px rgba(0,0,0,.25);}
     .topbar-brand{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:#fff;display:flex;align-items:center;gap:8px;}
     .topbar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
     .topbar-right{display:flex;align-items:center;gap:10px;}
     .pill{background:rgba(255,255,255,.12);color:#fff;font-size:.78rem;font-weight:500;padding:4px 12px;border-radius:20px;}
-    /* OFFLINE */
     .offline-banner{position:fixed;top:58px;left:0;right:0;z-index:99;background:var(--accent2);color:#fff;text-align:center;font-size:.82rem;font-weight:500;padding:6px 16px;}
-    /* BUTTONS */
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;border:none;cursor:pointer;transition:all .18s;}
     .btn:disabled{opacity:.55;cursor:not-allowed;}
     .btn.full{width:100%;}
@@ -34,11 +31,12 @@
     .btn-primary:hover:not(:disabled){background:#0a2744;transform:translateY(-1px);}
     .btn-danger{background:var(--danger);color:#fff;}
     .btn-danger:hover:not(:disabled){background:#dc2626;}
+    .btn-success{background:var(--success);color:#fff;}
+    .btn-success:hover:not(:disabled){background:#059669;}
     .btn-ghost{background:transparent;color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.25);}
     .btn-ghost:hover{background:rgba(255,255,255,.1);color:#fff;}
     .btn-outline{background:transparent;color:var(--brand);border:1.5px solid var(--border);}
     .btn-outline:hover{border-color:var(--brand);}
-    /* FORM */
     label{display:block;font-size:.82rem;font-weight:500;color:var(--muted);margin-bottom:6px;margin-top:16px;}
     label:first-of-type{margin-top:0;}
     input,select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.92rem;background:#f8f9fc;color:var(--text);transition:border-color .18s,box-shadow .18s;outline:none;}
@@ -49,38 +47,33 @@
     .eye-btn:hover{color:var(--brand);}
     .row{display:flex;gap:10px;}
     .row>*{flex:1;}
-    /* MESSAGES */
     .msg{font-size:.84rem;margin-top:10px;min-height:20px;border-radius:8px;}
     .msg.ok{color:var(--success);background:#ecfdf5;padding:8px 12px;}
     .msg.err{color:var(--danger);background:#fef2f2;padding:8px 12px;}
-    /* LOADING */
     .loading-screen{position:fixed;inset:0;z-index:9999;background:var(--brand2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
     .loading-screen .l-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;color:#fff;}
     .loading-screen .l-logo span{color:var(--accent);}
     .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
     .loading-screen p{color:rgba(255,255,255,.5);font-size:.85rem;}
-    /* LOGIN */
-    .login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(135deg,#16213e 0%,#0f3460 60%,#1a1a2e 100%);position:relative;overflow:hidden;}
-    .login-page::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% 20%,rgba(233,69,96,.15) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 10% 80%,rgba(245,166,35,.10) 0%,transparent 55%);pointer-events:none;}
+    /* LOGIN / CHANGE PW */
+    .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(135deg,#16213e 0%,#0f3460 60%,#1a1a2e 100%);position:relative;overflow:hidden;}
+    .auth-page::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% 20%,rgba(233,69,96,.15) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 10% 80%,rgba(245,166,35,.10) 0%,transparent 55%);pointer-events:none;}
     .deco{position:absolute;border-radius:50%;pointer-events:none;}
     .deco-1{width:320px;height:320px;border:1px solid rgba(255,255,255,.05);top:-80px;right:-80px;}
     .deco-2{width:200px;height:200px;border:1px solid rgba(233,69,96,.12);bottom:60px;left:-60px;}
-    .login-box{width:100%;max-width:400px;background:rgba(255,255,255,.97);border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:36px 32px;position:relative;z-index:1;animation:slideUp .4s ease;}
+    .auth-box{width:100%;max-width:400px;background:rgba(255,255,255,.97);border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:36px 32px;position:relative;z-index:1;animation:slideUp .4s ease;}
     @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
-    .login-logo .icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 14px rgba(15,52,96,.3);}
-    .login-logo .name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:var(--brand2);line-height:1.2;}
-    .login-logo .sub{font-size:.72rem;color:var(--muted);}
-    .login-box h2{font-family:'Syne',sans-serif;font-weight:700;font-size:1.4rem;color:var(--text);margin-bottom:4px;}
-    .login-box .subtitle{font-size:.88rem;color:var(--muted);margin-bottom:24px;}
-    .login-box .btn-primary{margin-top:20px;padding:13px;font-size:.95rem;font-weight:600;border-radius:12px;}
+    .auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+    .auth-logo .icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 4px 14px rgba(15,52,96,.3);}
+    .auth-logo .name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:var(--brand2);line-height:1.2;}
+    .auth-logo .sub{font-size:.72rem;color:var(--muted);}
+    .auth-box h2{font-family:'Syne',sans-serif;font-weight:700;font-size:1.4rem;color:var(--text);margin-bottom:4px;}
+    .auth-box .subtitle{font-size:.88rem;color:var(--muted);margin-bottom:20px;}
+    .auth-box .btn-primary{margin-top:20px;padding:13px;font-size:.95rem;font-weight:600;border-radius:12px;}
     .login-hint{margin-top:16px;text-align:center;font-size:.78rem;color:var(--muted);}
-    /* TROCA DE SENHA */
-    .change-pw-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(135deg,#16213e 0%,#0f3460 60%,#1a1a2e 100%);position:relative;overflow:hidden;}
-    .change-pw-box{width:100%;max-width:400px;background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:36px 32px;position:relative;z-index:1;animation:slideUp .4s ease;}
-    .change-pw-box .alert-banner{background:#fff8e1;border:1.5px solid var(--accent2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.85rem;color:#92640a;display:flex;align-items:center;gap:8px;}
-    /* APP LAYOUT */
+    .alert-banner{background:#fff8e1;border:1.5px solid var(--accent2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.84rem;color:#92640a;display:flex;align-items:flex-start;gap:8px;}
+    /* APP */
     .app-layout{padding-top:58px;min-height:100vh;display:flex;flex-direction:column;}
     .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--brand2);display:flex;height:60px;box-shadow:0 -2px 12px rgba(0,0,0,.2);}
     .bottom-nav .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:rgba(255,255,255,.5);font-size:.65rem;font-weight:500;cursor:pointer;border:none;background:none;transition:color .18s;}
@@ -101,13 +94,11 @@
     .tab-panel{display:none;}
     .tab-panel.active{display:block;animation:fadeIn .2s ease;}
     @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    /* WELCOME */
     .welcome-card{background:linear-gradient(135deg,var(--brand),#1a4a8a);border-radius:var(--radius);padding:24px 28px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden;}
     .welcome-card::after{content:'💼';position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:3.5rem;opacity:.12;}
     .welcome-card h2{font-family:'Syne',sans-serif;font-weight:700;font-size:1.25rem;margin-bottom:4px;}
     .welcome-card p{font-size:.88rem;opacity:.8;}
     .welcome-card .badge{display:inline-block;margin-top:12px;background:rgba(255,255,255,.2);border-radius:20px;padding:4px 12px;font-size:.78rem;font-weight:600;}
-    /* STATS */
     .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
     @media(min-width:600px){.stats-grid{grid-template-columns:repeat(4,1fr);}}
     .stat-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;border-left:3px solid var(--brand);}
@@ -116,47 +107,41 @@
     .stat-card.c-warning{border-left-color:var(--accent2);}
     .stat-label{font-size:.72rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;}
     .stat-value{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);margin-top:4px;}
-    /* CARD */
     .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:16px;}
     .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
     .card-header h3{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;}
     .card-header p{font-size:.82rem;color:var(--muted);margin-top:2px;}
-    /* PAGE HEADER */
     .page-header{margin-bottom:20px;}
     .page-header h1{font-family:'Syne',sans-serif;font-weight:700;font-size:1.35rem;}
     .page-header p{font-size:.88rem;color:var(--muted);margin-top:2px;}
-    /* ADMIN TABS */
     .admin-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
     .admin-tab-btn{padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-size:.84rem;font-weight:500;cursor:pointer;transition:all .18s;color:var(--muted);}
     .admin-tab-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}
     .admin-tab-btn:hover:not(.active){border-color:var(--brand);color:var(--brand);}
     .admin-panel{display:none;}
     .admin-panel.active{display:block;}
-    /* LIST */
-    .list-item{display:flex;align-items:center;justify-content:space-between;background:#f8f9fc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;gap:10px;margin-bottom:8px;}
+    .list-item{display:flex;align-items:center;background:#f8f9fc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;gap:10px;margin-bottom:8px;}
+    .list-item.inactive-item{opacity:.65;background:#fafafa;}
     .list-item-info{flex:1;min-width:0;}
     .list-item-name{font-weight:600;font-size:.9rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .list-item-sub{font-size:.78rem;color:var(--muted);margin-top:2px;}
     .list-item-actions{display:flex;gap:6px;flex-shrink:0;}
-    .badge-status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;flex-shrink:0;}
-    .badge-status.active{background:#ecfdf5;color:var(--success);}
+    .badges{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;}
+    .badge-status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;}
+    .badge-status.active  {background:#ecfdf5;color:var(--success);}
     .badge-status.inactive{background:#fef2f2;color:var(--danger);}
-    .badge-status.admin{background:#eff6ff;color:var(--brand);}
-    .badge-status.user{background:#f3f4f6;color:var(--muted);}
-    /* INFO BOX */
+    .badge-status.admin   {background:#eff6ff;color:var(--brand);}
+    .badge-status.user    {background:#f3f4f6;color:var(--muted);}
+    .badge-status.warning {background:#fff8e1;color:#92640a;}
     .info-box{background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 16px;font-size:.82rem;color:#1e40af;margin-bottom:16px;display:flex;align-items:flex-start;gap:8px;}
-    /* DIVIDER */
     .divider{height:1px;background:var(--border);margin:20px 0;}
-    /* EMPTY */
     .empty{text-align:center;padding:40px 20px;color:var(--muted);}
     .empty .empty-icon{font-size:2.5rem;margin-bottom:10px;}
     .empty p{font-size:.88rem;}
-    /* MODAL */
     .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;}
     .modal{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:slideUp .2s ease;}
     .modal h3{font-family:'Syne',sans-serif;font-weight:700;font-size:1.15rem;margin-bottom:20px;}
     .modal-footer{display:flex;gap:10px;margin-top:24px;justify-content:flex-end;}
-    /* TOAST */
     .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:300;padding:12px 20px;border-radius:12px;font-size:.88rem;font-weight:500;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:toastIn .3s ease;white-space:nowrap;}
     .toast.ok{background:var(--success);}
     .toast.err{background:var(--danger);}
@@ -166,14 +151,12 @@
 </head>
 <body>
 
-<!-- LOADING -->
 <div class="loading-screen" id="loadingScreen">
   <div class="l-logo">CF<span>O</span></div>
   <div class="spinner"></div>
   <p>Carregando...</p>
 </div>
 
-<!-- TOPBAR -->
 <div class="topbar hidden" id="topbar">
   <div class="topbar-brand"><span class="dot"></span>CFO — Controle Financeiro</div>
   <div class="topbar-right">
@@ -182,16 +165,15 @@
   </div>
 </div>
 
-<!-- OFFLINE -->
 <div class="offline-banner hidden" id="offlineBanner">
   ⚡ Você está offline — dados serão sincronizados quando a conexão voltar
 </div>
 
-<!-- ══ LOGIN ══ -->
-<div class="login-page hidden" id="loginPage">
+<!-- LOGIN -->
+<div class="auth-page hidden" id="loginPage">
   <div class="deco deco-1"></div><div class="deco deco-2"></div>
-  <div class="login-box">
-    <div class="login-logo">
+  <div class="auth-box">
+    <div class="auth-logo">
       <div class="icon">💼</div>
       <div><div class="name">CFO</div><div class="sub">Controle Financeiro de Obras</div></div>
     </div>
@@ -210,35 +192,34 @@
   </div>
 </div>
 
-<!-- ══ TROCA DE SENHA (PRIMEIRO ACESSO) ══ -->
-<div class="change-pw-page hidden" id="changePwPage">
-  <div class="deco deco-1"></div>
-  <div class="change-pw-box">
-    <div class="login-logo">
+<!-- TROCA DE SENHA -->
+<div class="auth-page hidden" id="changePwPage">
+  <div class="deco deco-1"></div><div class="deco deco-2"></div>
+  <div class="auth-box">
+    <div class="auth-logo">
       <div class="icon">🔐</div>
       <div><div class="name">CFO</div><div class="sub">Primeiro acesso</div></div>
     </div>
-    <div class="alert-banner">⚠️ Por segurança, você precisa criar uma nova senha antes de continuar.</div>
+    <div class="alert-banner">⚠️ Por segurança, crie uma nova senha antes de continuar.</div>
     <h2>Crie sua senha</h2>
-    <p class="subtitle" style="margin-bottom:20px">Escolha uma senha segura com pelo menos 6 caracteres.</p>
+    <p class="subtitle">Escolha uma senha com pelo menos 6 caracteres.</p>
     <label>Nova Senha</label>
     <div class="pass-row">
       <input id="newPass1" type="password" placeholder="Mínimo 6 caracteres">
       <button class="eye-btn" type="button" onclick="App.togglePass('newPass1')">👁</button>
     </div>
-    <label>Confirmar Nova Senha</label>
+    <label>Confirmar Senha</label>
     <div class="pass-row">
       <input id="newPass2" type="password" placeholder="Repita a senha">
       <button class="eye-btn" type="button" onclick="App.togglePass('newPass2')">👁</button>
     </div>
-    <button class="btn btn-primary full" id="btnChangePw" onclick="App.changePassword()" style="margin-top:20px;padding:13px;font-size:.95rem;font-weight:600;border-radius:12px;">Salvar e Entrar</button>
+    <button class="btn btn-primary full" id="btnChangePw" onclick="App.changePassword()">Salvar e Entrar</button>
     <div class="msg" id="changePwMsg"></div>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- APP -->
 <div class="app-layout hidden" id="appLayout">
-
   <nav class="side-nav hidden" id="sideNav">
     <button class="nav-item active" onclick="App.goTab('dashboard')" data-tab="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
     <button class="nav-item" onclick="App.goTab('lancamentos')" data-tab="lancamentos"><span class="nav-icon">➕</span> Lançamentos</button>
@@ -317,11 +298,7 @@
       <div class="admin-panel" id="adm-usuarios">
         <div class="card">
           <div class="card-header"><div><h3>Cadastrar Colaborador</h3><p>Crie um novo acesso ao sistema.</p></div></div>
-
-          <div class="info-box">
-            ℹ️ A senha padrão é <strong>user123</strong>. No primeiro acesso, o colaborador será obrigado a criar uma nova senha.
-          </div>
-
+          <div class="info-box">ℹ️ A senha padrão é <strong>user123</strong>. No primeiro acesso o colaborador será obrigado a criar uma nova senha.</div>
           <label>Nome completo</label>
           <input id="userNome" type="text" placeholder="Ex: João da Silva">
           <label>E-mail</label>
@@ -340,11 +317,16 @@
           </div>
           <div class="msg" id="userMsg"></div>
         </div>
-
         <div class="card">
           <div class="card-header">
-            <div><h3>Colaboradores Cadastrados</h3></div>
+            <div><h3>Colaboradores</h3></div>
             <button class="btn btn-outline sm" onclick="App.loadUsers()">🔄 Atualizar</button>
+          </div>
+          <!-- filtro -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <button class="admin-tab-btn active" id="filterAll"    onclick="App.filterUsers('all')">Todos</button>
+            <button class="admin-tab-btn"         id="filterActive" onclick="App.filterUsers('active')">✅ Ativos</button>
+            <button class="admin-tab-btn"         id="filterInact"  onclick="App.filterUsers('inactive')">⛔ Inativos</button>
           </div>
           <div id="userList"><div class="empty"><div class="empty-icon">👥</div><p>Nenhum colaborador cadastrado ainda.</p></div></div>
         </div>
@@ -361,7 +343,7 @@
   </nav>
 </div>
 
-<!-- MODAL CONFIRMAÇÃO -->
+<!-- MODAL -->
 <div class="modal-overlay hidden" id="modalConfirm">
   <div class="modal">
     <h3 id="modalTitle">Confirmar ação</h3>
@@ -380,8 +362,7 @@
            createUserWithEmailAndPassword, updatePassword }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
-           updateDoc, deleteDoc, serverTimestamp, enableIndexedDbPersistence,
-           query, orderBy }
+           updateDoc, serverTimestamp, enableIndexedDbPersistence, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const SENHA_PADRAO = "user123";
@@ -395,19 +376,15 @@
     appId:             "1:762360030642:web:c041f5526c1a274ed0b0ab"
   };
 
-  // App principal (sessão ativa do usuário logado)
   const firebaseMain   = initializeApp(firebaseConfig, "main");
-  // App auxiliar (só para criar usuários sem deslogar o admin)
   const firebaseHelper = initializeApp(firebaseConfig, "helper");
-
   const auth    = getAuth(firebaseMain);
   const authAux = getAuth(firebaseHelper);
   const db      = getFirestore(firebaseMain);
 
   enableIndexedDbPersistence(db).catch(() => {});
 
-  const $   = id => document.getElementById(id);
-  const brl = n  => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const $ = id => document.getElementById(id);
 
   function setMsg(id, text, ok=false) {
     const el=$(id); if(!el) return;
@@ -433,22 +410,19 @@
   }
 
   function showPage(page) {
-    ["loginPage","changePwPage","appLayout"].forEach(id=>{
-      $(id).classList.add("hidden");
-    });
+    ["loginPage","changePwPage","appLayout"].forEach(id=>$(id).classList.add("hidden"));
     $(page).classList.remove("hidden");
-    if(page==="appLayout"){
-      $("topbar").classList.remove("hidden");
-      $("sideNav").classList.remove("hidden");
-    }
+    if(page==="appLayout"){ $("sideNav").classList.remove("hidden"); }
   }
 
   function goTab(tab) {
+    // bloqueia acesso ao admin para não-admins
+    if(tab==="admin" && currentRole!=="ADMIN") return;
     document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".nav-item[data-tab]").forEach(b=>b.classList.remove("active"));
     $(`tab-${tab}`)?.classList.add("active");
     document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b=>b.classList.add("active"));
-    if(tab==="admin") { loadObras(); fillObraSelect(); }
+    if(tab==="admin"){ loadObras(); fillObraSelect(); }
   }
 
   function adminTab(tab) {
@@ -456,21 +430,24 @@
     const btns=document.querySelectorAll(".admin-tab-btn");
     btns.forEach(b=>b.classList.remove("active"));
     $(`adm-${tab}`)?.classList.add("active");
-    if(tab==="obras")    { btns[0].classList.add("active"); loadObras(); }
-    if(tab==="usuarios") { btns[1].classList.add("active"); loadUsers(); fillObraSelect(); }
+    if(tab==="obras")   { btns[0].classList.add("active"); loadObras(); }
+    if(tab==="usuarios"){ btns[1].classList.add("active"); loadUsers(); fillObraSelect(); }
   }
 
   function togglePass(id) {
     const el=$(id); if(el) el.type=el.type==="password"?"text":"password";
   }
 
-  function showModal(title, text, cb) {
+  function showModal(title, text, cb, btnLabel="Confirmar", danger=true) {
     $("modalTitle").textContent=title;
     $("modalText").textContent=text;
     $("modalConfirm").classList.remove("hidden");
-    $("modalConfirmBtn").onclick=()=>{ closeModal(); cb(); };
+    const btn=$("modalConfirmBtn");
+    btn.textContent=btnLabel;
+    btn.className="btn "+(danger?"btn-danger":"btn-success");
+    btn.onclick=()=>{ closeModal(); cb(); };
   }
-  function closeModal() { $("modalConfirm").classList.add("hidden"); }
+  function closeModal(){ $("modalConfirm").classList.add("hidden"); }
 
   // ── LOGIN ──
   async function login() {
@@ -495,30 +472,26 @@
     } finally { btn.disabled=false; btn.textContent="Entrar"; }
   }
 
-  async function logout() { await signOut(auth); }
+  async function logout(){ await signOut(auth); }
 
-  // ── TROCA DE SENHA (PRIMEIRO ACESSO) ──
+  // ── TROCA DE SENHA ──
   async function changePassword() {
     setMsg("changePwMsg","");
-    const p1=$("newPass1").value;
-    const p2=$("newPass2").value;
+    const p1=$("newPass1").value, p2=$("newPass2").value;
     const btn=$("btnChangePw");
-    if(p1.length<6){setMsg("changePwMsg","A senha deve ter pelo menos 6 caracteres.");return;}
+    if(p1.length<6){setMsg("changePwMsg","Mínimo 6 caracteres.");return;}
     if(p1!==p2){setMsg("changePwMsg","As senhas não conferem.");return;}
     if(p1===SENHA_PADRAO){setMsg("changePwMsg","Escolha uma senha diferente da senha padrão.");return;}
     btn.disabled=true; btn.textContent="Salvando...";
     try {
-      const user=auth.currentUser;
-      await updatePassword(user,p1);
-      // marca primeiro_acesso como false
-      await updateDoc(doc(db,"usuarios",user.uid),{primeiro_acesso:false});
+      await updatePassword(auth.currentUser,p1);
+      await updateDoc(doc(db,"usuarios",auth.currentUser.uid),{primeiro_acesso:false});
       toast("Senha criada com sucesso! ✅");
-      await initApp(user);
+      await initApp(auth.currentUser);
     } catch(e){ setMsg("changePwMsg","Erro: "+e.message); }
     finally { btn.disabled=false; btn.textContent="Salvar e Entrar"; }
   }
 
-  // ── PERFIL ──
   async function loadProfile(uid) {
     try { const s=await getDoc(doc(db,"usuarios",uid)); if(s.exists()) return s.data(); } catch(_){}
     return null;
@@ -526,17 +499,22 @@
 
   let currentUser=null, currentRole="USER";
 
-  // ── INIT APP ──
   async function initApp(user) {
     currentUser=user;
     const profile=await loadProfile(user.uid);
     const nome=profile?.nome||user.email.split("@")[0];
     currentRole=profile?.role||"USER";
 
-    // Detecta primeiro acesso
+    // ── CONTA DESATIVADA ──
+    if(profile?.ativo===false){
+      await signOut(auth);
+      setMsg("loginMsg","⛔ Sua conta foi desativada. Fale com o administrador.");
+      showPage("loginPage");
+      return;
+    }
+
+    // ── PRIMEIRO ACESSO ──
     if(profile?.primeiro_acesso===true){
-      $("loadingScreen").style.display="none";
-      $("topbar").classList.remove("hidden");
       showPage("changePwPage");
       return;
     }
@@ -552,19 +530,17 @@
       $("bottomAdmin")?.classList.remove("hidden");
     }
 
-    // stats
     try {
       const obras=await getDocs(collection(db,"obras"));
       $("statObras").textContent=obras.docs.filter(d=>d.data().ativa!==false).length||"0";
       const users=await getDocs(collection(db,"usuarios"));
-      $("statUsers").textContent=users.size||"0";
+      $("statUsers").textContent=users.docs.filter(d=>d.data().ativo!==false&&d.data().role!=="ADMIN").length||"0";
     } catch(_){}
 
     showPage("appLayout");
     goTab("dashboard");
   }
 
-  // ── PREENCHER SELECT DE OBRAS ──
   async function fillObraSelect() {
     const sel=$("userObra"); if(!sel) return;
     try {
@@ -583,17 +559,13 @@
   // ── OBRAS ──
   async function saveObra() {
     setMsg("obraMsg","");
-    const nome=$("obraName").value.trim();
-    const desc=$("obraDesc").value.trim();
+    const nome=$("obraName").value.trim(), desc=$("obraDesc").value.trim();
     const btn=$("btnSaveObra");
     if(!nome){setMsg("obraMsg","Informe o nome da obra.");return;}
     btn.disabled=true; btn.textContent="Salvando...";
     try {
       const id="OBRA_"+Date.now();
-      await setDoc(doc(db,"obras",id),{
-        id, nome, descricao:desc, ativa:true,
-        criadoPor:currentUser.uid, criadoEm:serverTimestamp()
-      });
+      await setDoc(doc(db,"obras",id),{id,nome,descricao:desc,ativa:true,criadoPor:currentUser.uid,criadoEm:serverTimestamp()});
       $("obraName").value=""; $("obraDesc").value="";
       setMsg("obraMsg","✅ Obra cadastrada!",true);
       toast("Obra cadastrada! 🏗️");
@@ -601,7 +573,7 @@
       const snap=await getDocs(collection(db,"obras"));
       $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length;
     } catch(e){ setMsg("obraMsg","Erro: "+e.message); }
-    finally { btn.disabled=false; btn.textContent="💾 Salvar Obra"; }
+    finally{ btn.disabled=false; btn.textContent="💾 Salvar Obra"; }
   }
 
   async function loadObras() {
@@ -614,7 +586,7 @@
       snap.forEach(d=>{
         const o=d.data();
         const div=document.createElement("div");
-        div.className="list-item";
+        div.className="list-item"+(o.ativa===false?" inactive-item":"");
         div.innerHTML=`
           <div class="list-item-info">
             <div class="list-item-name">${o.nome}</div>
@@ -623,7 +595,6 @@
           <span class="badge-status ${o.ativa!==false?"active":"inactive"}">${o.ativa!==false?"✅ Ativa":"⛔ Inativa"}</span>
           <div class="list-item-actions">
             <button class="btn btn-outline sm" onclick="App.toggleObra('${d.id}',${o.ativa!==false})">${o.ativa!==false?"Desativar":"Ativar"}</button>
-            <button class="btn btn-danger sm" onclick="App.deleteObra('${d.id}','${o.nome}')">🗑️</button>
           </div>`;
         el.appendChild(div);
       });
@@ -633,94 +604,128 @@
   async function toggleObra(id,ativa) {
     try {
       await updateDoc(doc(db,"obras",id),{ativa:!ativa});
-      toast(ativa?"Obra desativada.":"Obra ativada! ✅",!ativa);
+      toast(ativa?"Obra desativada.":"Obra reativada! ✅",!ativa);
       await loadObras();
       const snap=await getDocs(collection(db,"obras"));
       $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length;
     } catch(e){ toast("Erro: "+e.message,false); }
   }
 
-  async function deleteObra(id,nome) {
-    showModal("Excluir obra","Tem certeza que deseja excluir \""+nome+"\"? Esta ação não pode ser desfeita.",async()=>{
-      try { await deleteDoc(doc(db,"obras",id)); toast("Obra excluída."); await loadObras(); }
-      catch(e){ toast("Erro: "+e.message,false); }
-    });
-  }
-
   // ── COLABORADORES ──
+  let allUsers = [];
+  let currentFilter = "all";
+
   async function saveUser() {
     setMsg("userMsg","");
-    const nome  = $("userNome").value.trim();
-    const email = $("userEmail").value.trim();
-    const role  = $("userRole").value;
-    const obra  = $("userObra").value;
-    const btn   = $("btnSaveUser");
-    if(!nome) {setMsg("userMsg","Informe o nome.");return;}
+    const nome=$("userNome").value.trim(), email=$("userEmail").value.trim();
+    const role=$("userRole").value, obra=$("userObra").value;
+    const btn=$("btnSaveUser");
+    if(!nome){setMsg("userMsg","Informe o nome.");return;}
     if(!email){setMsg("userMsg","Informe o e-mail.");return;}
     btn.disabled=true; btn.textContent="Cadastrando...";
     try {
-      // Cria no app auxiliar — não desconecta o admin!
       const cred=await createUserWithEmailAndPassword(authAux,email,SENHA_PADRAO);
       await signOut(authAux);
-      // Salva perfil no Firestore
       await setDoc(doc(db,"usuarios",cred.user.uid),{
         uid:cred.user.uid, nome, email, role,
-        obra_id: obra||"",
-        ativo:true,
-        primeiro_acesso:true,   // ← flag de primeiro acesso
-        criadoPor:currentUser.uid,
-        criadoEm:serverTimestamp()
+        obra_id:obra||"", ativo:true, primeiro_acesso:true,
+        criadoPor:currentUser.uid, criadoEm:serverTimestamp()
       });
       $("userNome").value=""; $("userEmail").value=""; $("userObra").value="";
       setMsg("userMsg","✅ Colaborador cadastrado! Senha padrão: user123",true);
       toast("Colaborador cadastrado! 👤");
       await loadUsers();
       const snap=await getDocs(collection(db,"usuarios"));
-      $("statUsers").textContent=snap.size||"0";
-    } catch(e) {
-      const msgs={
-        "auth/email-already-in-use":"Este e-mail já está cadastrado.",
-        "auth/invalid-email":"E-mail inválido.",
-        "auth/weak-password":"Senha fraca."
-      };
+      $("statUsers").textContent=snap.docs.filter(d=>d.data().ativo!==false&&d.data().role!=="ADMIN").length||"0";
+    } catch(e){
+      const msgs={"auth/email-already-in-use":"Este e-mail já está cadastrado.","auth/invalid-email":"E-mail inválido.","auth/weak-password":"Senha fraca."};
       setMsg("userMsg",msgs[e.code]||"Erro: "+e.message);
-    } finally { btn.disabled=false; btn.textContent="💾 Cadastrar Colaborador"; }
+    } finally{ btn.disabled=false; btn.textContent="💾 Cadastrar Colaborador"; }
   }
 
   async function loadUsers() {
     const el=$("userList"); if(!el) return;
     el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>`;
     try {
+      // carrega obras para resolver nomes
+      const obrasSnap=await getDocs(collection(db,"obras"));
+      const obrasMap={};
+      obrasSnap.forEach(d=>{ obrasMap[d.id]=d.data().nome; });
+
       const snap=await getDocs(query(collection(db,"usuarios"),orderBy("criadoEm","desc")));
-      if(snap.empty){el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p>Nenhum colaborador cadastrado ainda.</p></div>`;return;}
-      el.innerHTML="";
-      snap.forEach(d=>{
-        const u=d.data();
-        const div=document.createElement("div");
-        div.className="list-item";
-        const primeiroAcesso=u.primeiro_acesso===true?`<span class="badge-status inactive" style="font-size:.68rem">⏳ Aguardando 1º acesso</span>`:"";
-        div.innerHTML=`
-          <div class="list-item-info">
-            <div class="list-item-name">${u.nome||"—"}</div>
-            <div class="list-item-sub">${u.email}${u.obra_id?" · 🏗️ "+u.obra_id:""}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-            <span class="badge-status ${u.role==="ADMIN"?"admin":"user"}">${u.role==="ADMIN"?"👑 Admin":"👤 Colab."}</span>
-            ${primeiroAcesso}
-          </div>
-          <div class="list-item-actions">
-            <button class="btn btn-danger sm" onclick="App.deleteUser('${d.id}','${u.nome||u.email}')">🗑️</button>
-          </div>`;
-        el.appendChild(div);
+      allUsers=snap.docs.map(d=>{
+        const data=d.data();
+        return {
+          id:d.id,
+          ...data,
+          obra_nome: data.obra_id ? (obrasMap[data.obra_id]||"Obra não encontrada") : ""
+        };
       });
-    } catch(e){ el.innerHTML=`<p style="color:var(--danger);padding:12px">Erro ao carregar colaboradores.</p>`; }
+      renderUsers();
+    } catch(e){ el.innerHTML=`<p style="color:var(--danger);padding:12px">Erro ao carregar.</p>`; }
   }
 
-  async function deleteUser(id,nome) {
-    showModal("Remover colaborador","Tem certeza que deseja remover \""+nome+"\"?",async()=>{
-      try { await deleteDoc(doc(db,"usuarios",id)); toast("Colaborador removido."); await loadUsers(); }
-      catch(e){ toast("Erro: "+e.message,false); }
+  function filterUsers(filter) {
+    currentFilter=filter;
+    ["filterAll","filterActive","filterInact"].forEach(id=>$(id)?.classList.remove("active"));
+    $("filter"+filter.charAt(0).toUpperCase()+filter.slice(1))?.classList.add("active");
+    renderUsers();
+  }
+
+  function renderUsers() {
+    const el=$("userList"); if(!el) return;
+    let list=allUsers;
+    if(currentFilter==="active")   list=allUsers.filter(u=>u.ativo!==false);
+    if(currentFilter==="inactive") list=allUsers.filter(u=>u.ativo===false);
+    if(!list.length){
+      el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p>Nenhum colaborador encontrado.</p></div>`;
+      return;
+    }
+    el.innerHTML="";
+    list.forEach(u=>{
+      const div=document.createElement("div");
+      div.className="list-item"+(u.ativo===false?" inactive-item":"");
+      const badges=`
+        <div class="badges">
+          <span class="badge-status ${u.role==="ADMIN"?"admin":"user"}">${u.role==="ADMIN"?"👑 Admin":"👤 Colab."}</span>
+          ${u.ativo===false?'<span class="badge-status inactive">⛔ Inativo</span>':''}
+          ${u.primeiro_acesso===true&&u.ativo!==false?'<span class="badge-status warning">⏳ Aguard. 1º acesso</span>':''}
+        </div>`;
+      const acaoBtn = u.ativo===false
+        ? `<button class="btn btn-success sm" onclick="App.toggleUser('${u.id}',false)">✅ Reativar</button>`
+        : `<button class="btn btn-danger sm" onclick="App.toggleUser('${u.id}',true)">⛔ Desativar</button>`;
+      div.innerHTML=`
+        <div class="list-item-info">
+          <div class="list-item-name">${u.nome||"—"}</div>
+          <div class="list-item-sub">${u.email}${u.obra_nome?" · 🏗️ "+u.obra_nome:""}</div>
+        </div>
+        ${badges}
+        <div class="list-item-actions">${acaoBtn}</div>`;
+      el.appendChild(div);
     });
+  }
+
+  async function toggleUser(id, isActive) {
+    const u=allUsers.find(x=>x.id===id);
+    const nome=u?.nome||"este colaborador";
+    if(isActive) {
+      showModal(
+        "Desativar colaborador",
+        `"${nome}" perderá o acesso ao sistema. Você pode reativar a qualquer momento.`,
+        async()=>{
+          await updateDoc(doc(db,"usuarios",id),{ativo:false});
+          toast("Colaborador desativado.");
+          await loadUsers();
+        },
+        "Desativar", true
+      );
+    } else {
+      await updateDoc(doc(db,"usuarios",id),{ativo:true});
+      toast("Colaborador reativado! ✅");
+      await loadUsers();
+    }
+    const snap2=await getDocs(collection(db,"usuarios"));
+    $("statUsers").textContent=snap2.docs.filter(d=>d.data().ativo!==false&&d.data().role!=="ADMIN").length||"0";
   }
 
   // ── AUTH STATE ──
@@ -742,8 +747,8 @@
   window.App = {
     login, logout, togglePass, goTab, adminTab,
     changePassword,
-    saveObra, loadObras, toggleObra, deleteObra,
-    saveUser, loadUsers, deleteUser,
+    saveObra, loadObras, toggleObra,
+    saveUser, loadUsers, filterUsers, toggleUser,
     closeModal
   };
 </script>
