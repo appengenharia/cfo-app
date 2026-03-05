@@ -913,22 +913,31 @@
   async function uploadFile() {
     if(!selectedFile) return null;
     const isPdf = selectedFile.type === "application/pdf";
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
-    const fd = new FormData();
-    fd.append("file", selectedFile);
-    fd.append("upload_preset", CLOUDINARY_PRESET);
-    fd.append("folder", "cfo");
     try {
-      const r = await fetch(url, {method:"POST", body:fd});
-      const d = await r.json();
-      if(d.error) { console.error("Cloudinary error:", d.error); return null; }
-      let finalUrl = d.secure_url;
       if(isPdf) {
-        // Abre PDF via Google Docs Viewer — funciona 100% sem custo
-        finalUrl = "https://docs.google.com/viewer?url=" + encodeURIComponent(d.secure_url) + "&embedded=true";
+        // PDF usa preset cfo_raw com resource_type=raw
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`;
+        const fd = new FormData();
+        fd.append("file", selectedFile);
+        fd.append("upload_preset", "cfo_raw");
+        fd.append("folder", "cfo");
+        const r = await fetch(url, {method:"POST", body:fd});
+        const d = await r.json();
+        if(d.error) { console.error("Cloudinary PDF error:", d.error); return null; }
+        return { url: d.secure_url, tipo: "pdf", nome: selectedFile.name };
+      } else {
+        // Imagem usa preset normal
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+        const fd = new FormData();
+        fd.append("file", selectedFile);
+        fd.append("upload_preset", CLOUDINARY_PRESET);
+        fd.append("folder", "cfo");
+        const r = await fetch(url, {method:"POST", body:fd});
+        const d = await r.json();
+        if(d.error) { console.error("Cloudinary image error:", d.error); return null; }
+        return { url: d.secure_url, tipo: "imagem", nome: selectedFile.name };
       }
-      return { url: finalUrl, tipo: isPdf ? "pdf" : "imagem", nome: selectedFile.name };
-    } catch(e) { console.error(e); return null; }
+    } catch(e) { console.error("Upload error:", e); return null; }
   }
 
   // data de hoje como padrão
