@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -319,9 +318,9 @@
         <label id="lancComprLabel">Comprovante (foto ou PDF)</label>
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('lancFile').click()">
           <div class="upload-icon">📎</div>
-          <div class="upload-text">Clique para anexar foto ou PDF</div>
-          <div class="upload-sub">Máx. 10MB — JPG, PNG, PDF</div>
-          <input type="file" id="lancFile" accept="image/*,.pdf" style="display:none" onchange="App.onFileSelect()">
+          <div class="upload-text">Clique para anexar foto do comprovante</div>
+          <div class="upload-sub">Máx. 10MB — JPG ou PNG</div>
+          <input type="file" id="lancFile" accept="image/*" style="display:none" onchange="App.onFileSelect()">
         </div>
         <div id="filePreview" class="hidden"></div>
         <div style="display:flex;gap:10px;margin-top:20px">
@@ -894,11 +893,12 @@
     const file = $("lancFile").files[0];
     if(!file) return;
     if(file.size > 10 * 1024 * 1024) { toast("Arquivo muito grande (máx. 10MB)", false); return; }
+    if(!file.type.startsWith("image/")) { toast("Apenas imagens são aceitas (JPG, PNG)", false); return; }
     selectedFile = file;
     const prev = $("filePreview");
     prev.className = "file-preview";
     prev.innerHTML = `
-      <span style="font-size:1.4rem">${file.type.includes("pdf")?"📄":"🖼️"}</span>
+      <span style="font-size:1.4rem">🖼️</span>
       <span class="file-name">${file.name}</span>
       <button class="file-remove" onclick="App.removeFile()" title="Remover">✕</button>`;
   }
@@ -913,31 +913,16 @@
 
   async function uploadFile() {
     if(!selectedFile) return null;
-    const isPdf = selectedFile.type === "application/pdf";
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+    fd.append("upload_preset", CLOUDINARY_PRESET);
+    fd.append("folder", "cfo");
     try {
-      if(isPdf) {
-        // PDF usa preset cfo_raw com resource_type=raw
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`;
-        const fd = new FormData();
-        fd.append("file", selectedFile);
-        fd.append("upload_preset", "cfo_raw");
-        fd.append("folder", "cfo");
-        const r = await fetch(url, {method:"POST", body:fd});
-        const d = await r.json();
-        if(d.error) { console.error("Cloudinary PDF error:", d.error); return null; }
-        return { url: d.secure_url, tipo: "pdf", nome: selectedFile.name };
-      } else {
-        // Imagem usa preset normal
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
-        const fd = new FormData();
-        fd.append("file", selectedFile);
-        fd.append("upload_preset", CLOUDINARY_PRESET);
-        fd.append("folder", "cfo");
-        const r = await fetch(url, {method:"POST", body:fd});
-        const d = await r.json();
-        if(d.error) { console.error("Cloudinary image error:", d.error); return null; }
-        return { url: d.secure_url, tipo: "imagem", nome: selectedFile.name };
-      }
+      const r = await fetch(url, {method:"POST", body:fd});
+      const d = await r.json();
+      if(d.error) { console.error("Cloudinary error:", d.error); return null; }
+      return { url: d.secure_url, tipo: "imagem", nome: selectedFile.name };
     } catch(e) { console.error("Upload error:", e); return null; }
   }
 
@@ -1093,11 +1078,8 @@
         const div=document.createElement("div");
         div.className="lanc-item";
         const dataFmt = l.data ? new Date(l.data+"T12:00:00").toLocaleDateString("pt-BR") : "—";
-        const isPdf = l.comprovante?.tipo === "pdf";
         const compLink = l.comprovante?.url
-          ? isPdf
-            ? `<a href="${l.comprovante.url}" download="${l.comprovante.nome||'comprovante.pdf'}" target="_blank" style="font-size:.78rem;color:var(--brand);text-decoration:none">📄 Baixar PDF</a>`
-            : `<a href="${l.comprovante.url}" target="_blank" style="font-size:.78rem;color:var(--brand);text-decoration:none">📎 Ver comprovante</a>`
+          ? `<a href="${l.comprovante.url}" target="_blank" style="font-size:.78rem;color:var(--brand);text-decoration:none">📎 Ver comprovante</a>`
           : "";
         div.innerHTML=`
           <div class="lanc-item-top">
