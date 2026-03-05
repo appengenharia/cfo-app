@@ -697,7 +697,7 @@
         return {
           id:d.id,
           ...data,
-          obra_nome: data.obra_id ? (obrasMap[data.obra_id]||"Obra não encontrada") : ""
+          obra_nome: data.obra_id ? (obrasMap[data.obra_id]||"Obra não e ncontrada") : ""
         };
       });
       renderUsers();
@@ -1488,7 +1488,8 @@
           o.value = d.id; o.textContent = d.data().nome;
           selObra.appendChild(o);
         });
-        if(selColab) selColab.innerHTML = '<option value="">Todos</option><option value="' + currentUser.uid + '" selected>' + ((await loadProfile(currentUser.uid))?.nome || currentUser.email) + '</option>';
+        const profColab = await loadProfile(currentUser.uid);
+        if(selColab) selColab.innerHTML = '<option value="">Todos</option><option value="' + currentUser.uid + '" selected>' + (profColab?.nome || currentUser.email) + '</option>';
         $("relColabWrap").style.display = "";
         $("relEmailConfig")?.classList.add("hidden");
         $("btnEnviarEmail").style.display = "none";
