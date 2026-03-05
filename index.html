@@ -839,7 +839,7 @@
     "Hospedagem","Combustível","Locação de automóvel","Alimentação",
     "Passagem de avião","Ferramentas","Materiais de construção","Outros gastos"
   ];
-  const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dibvvm6ix/upload";
+  const CLOUDINARY_CLOUD  = "dibvvm6ix";
   const CLOUDINARY_PRESET = "cfo_uploads";
 
   let editingLancId = null;
@@ -912,15 +912,20 @@
 
   async function uploadFile() {
     if(!selectedFile) return null;
+    const isPdf = selectedFile.type === "application/pdf";
+    // PDFs usam resource_type=raw, imagens usam image
+    const resourceType = isPdf ? "raw" : "image";
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`;
     const fd = new FormData();
     fd.append("file", selectedFile);
     fd.append("upload_preset", CLOUDINARY_PRESET);
     fd.append("folder", "cfo");
     try {
-      const r = await fetch(CLOUDINARY_URL, {method:"POST", body:fd});
+      const r = await fetch(url, {method:"POST", body:fd});
       const d = await r.json();
-      return { url: d.secure_url, tipo: selectedFile.type.includes("pdf") ? "pdf" : "imagem", nome: selectedFile.name };
-    } catch(e) { return null; }
+      if(d.error) { console.error(d.error); return null; }
+      return { url: d.secure_url, tipo: isPdf ? "pdf" : "imagem", nome: selectedFile.name };
+    } catch(e) { console.error(e); return null; }
   }
 
   // data de hoje como padrão
