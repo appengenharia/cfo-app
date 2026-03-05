@@ -147,6 +147,31 @@
     .toast.err{background:var(--danger);}
     @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
     @media(min-width:768px){.toast{bottom:24px;}}
+    /* UPLOAD */
+    .upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .18s;background:#fafafa;margin-top:4px;}
+    .upload-area:hover{border-color:var(--brand);background:#f0f7ff;}
+    .upload-icon{font-size:2rem;margin-bottom:6px;}
+    .upload-text{font-size:.9rem;font-weight:500;color:var(--text);}
+    .upload-sub{font-size:.78rem;color:var(--muted);margin-top:2px;}
+    .file-preview{display:flex;align-items:center;gap:10px;background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 14px;margin-top:8px;}
+    .file-preview .file-name{flex:1;font-size:.85rem;font-weight:500;color:var(--brand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .file-preview .file-remove{background:none;border:none;cursor:pointer;color:var(--danger);font-size:1.1rem;padding:2px;}
+    /* REEMBOLSÁVEL TOGGLE */
+    .reemb-toggle{display:flex;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;margin-top:4px;}
+    .reemb-opt{flex:1;padding:10px 8px;text-align:center;font-size:.8rem;font-weight:500;color:var(--muted);background:#f8f9fc;transition:all .18s;white-space:nowrap;}
+    .reemb-opt.active-opt{background:var(--brand);color:#fff;}
+    /* LANÇAMENTO CARD */
+    .lanc-item{background:#f8f9fc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;}
+    .lanc-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+    .lanc-item-info{flex:1;min-width:0;}
+    .lanc-item-cat{font-size:.72rem;font-weight:600;color:var(--brand);text-transform:uppercase;letter-spacing:.5px;}
+    .lanc-item-desc{font-weight:600;font-size:.9rem;color:var(--text);margin-top:2px;}
+    .lanc-item-sub{font-size:.78rem;color:var(--muted);margin-top:3px;}
+    .lanc-item-valor{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:var(--text);white-space:nowrap;}
+    .lanc-item-actions{display:flex;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+    .badge-reemb{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600;}
+    .badge-reemb.sim{background:#fff8e1;color:#92640a;}
+    .badge-reemb.nao{background:#ecfdf5;color:var(--success);}
   </style>
 </head>
 <body>
@@ -255,7 +280,68 @@
     <!-- LANÇAMENTOS -->
     <div class="tab-panel" id="tab-lancamentos">
       <div class="page-header"><h1>Registrar Despesa</h1><p>Adicione um novo gasto à obra selecionada.</p></div>
-      <div class="card"><div class="empty"><div class="empty-icon">➕</div><p>Formulário de lançamento — Parte 3.</p></div></div>
+
+      <div class="card" id="formLancCard">
+        <div class="card-header"><div><h3 id="formLancTitle">Nova Despesa</h3><p>Preencha os dados do gasto.</p></div></div>
+        <div class="row">
+          <div><label>Obra</label><select id="lancObra"></select></div>
+          <div><label>Data</label><input id="lancData" type="date"></div>
+        </div>
+        <label>Categoria</label>
+        <select id="lancCategoria">
+          <option value="">— Selecione —</option>
+          <option>Hospedagem</option>
+          <option>Combustível</option>
+          <option>Locação de automóvel</option>
+          <option>Alimentação</option>
+          <option>Passagem de avião</option>
+          <option>Ferramentas</option>
+          <option>Materiais de construção</option>
+          <option>Outros gastos</option>
+        </select>
+        <label>Descrição</label>
+        <input id="lancDesc" type="text" placeholder="Ex: Almoço com equipe, nota fiscal #123...">
+        <div class="row">
+          <div>
+            <label>Valor (R$)</label>
+            <input id="lancValor" type="number" min="0" step="0.01" placeholder="0,00">
+          </div>
+          <div>
+            <label>Reembolsável?</label>
+            <div class="reemb-toggle" id="reembToggle" onclick="App.toggleReemb()">
+              <div class="reemb-opt active-opt" id="reembNao">✅ Empresa</div>
+              <div class="reemb-opt" id="reembSim">🔄 Reembolsável</div>
+            </div>
+            <input type="hidden" id="lancReemb" value="nao">
+          </div>
+        </div>
+        <label>Comprovante (foto ou PDF — opcional)</label>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('lancFile').click()">
+          <div class="upload-icon">📎</div>
+          <div class="upload-text">Clique para anexar foto ou PDF</div>
+          <div class="upload-sub">Máx. 10MB — JPG, PNG, PDF</div>
+          <input type="file" id="lancFile" accept="image/*,.pdf" style="display:none" onchange="App.onFileSelect()">
+        </div>
+        <div id="filePreview" class="hidden"></div>
+        <div style="display:flex;gap:10px;margin-top:20px">
+          <button class="btn btn-outline hidden" id="btnCancelLanc" onclick="App.cancelLanc()">Cancelar</button>
+          <button class="btn btn-primary full" id="btnSaveLanc" onclick="App.saveLanc()">💾 Salvar Despesa</button>
+        </div>
+        <div class="msg" id="lancMsg"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div><h3>Lançamentos</h3></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="filterLancObra" style="padding:6px 10px;font-size:.82rem;border-radius:8px;border:1.5px solid var(--border);background:#fff;width:auto" onchange="App.loadLancs()">
+              <option value="">Todas as obras</option>
+            </select>
+            <button class="btn btn-outline sm" onclick="App.loadLancs()">🔄</button>
+          </div>
+        </div>
+        <div id="lancList"><div class="empty"><div class="empty-icon">📋</div><p>Nenhuma despesa registrada ainda.</p></div></div>
+      </div>
     </div>
 
     <!-- RELATÓRIOS -->
@@ -362,7 +448,7 @@
            createUserWithEmailAndPassword, updatePassword }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
-           updateDoc, serverTimestamp, enableIndexedDbPersistence, query, orderBy }
+           updateDoc, deleteDoc, serverTimestamp, enableIndexedDbPersistence, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const SENHA_PADRAO = "user123";
@@ -422,7 +508,8 @@
     document.querySelectorAll(".nav-item[data-tab]").forEach(b=>b.classList.remove("active"));
     $(`tab-${tab}`)?.classList.add("active");
     document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b=>b.classList.add("active"));
-    if(tab==="admin"){ loadObras(); fillObraSelect(); }
+    if(tab==="admin")     { loadObras(); fillObraSelect(); }
+    if(tab==="lancamentos"){ fillLancObras(); loadLancs(); setTodayDate(); }
   }
 
   function adminTab(tab) {
@@ -539,6 +626,7 @@
 
     showPage("appLayout");
     goTab("dashboard");
+    updateStatTotal();
   }
 
   async function fillObraSelect() {
@@ -744,11 +832,295 @@
 
   initOffline();
 
-  window.App = {
+  // ══════════════════════════════
+  // LANÇAMENTOS
+  // ══════════════════════════════
+  const CATEGORIAS = [
+    "Hospedagem","Combustível","Locação de automóvel","Alimentação",
+    "Passagem de avião","Ferramentas","Materiais de construção","Outros gastos"
+  ];
+  const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dibvvm6ix/upload";
+  const CLOUDINARY_PRESET = "cfo_uploads";
+
+  let editingLancId = null;
+  let selectedFile  = null;
+
+  // Preenche select de obras no formulário de lançamento
+  async function fillLancObras() {
+    const sel  = $("lancObra");
+    const filt = $("filterLancObra");
+    if(!sel) return;
+    try {
+      const snap = await getDocs(collection(db,"obras"));
+      sel.innerHTML  = `<option value="">— Selecione a obra —</option>`;
+      if(filt) filt.innerHTML = `<option value="">Todas as obras</option>`;
+      snap.forEach(d => {
+        const o = d.data();
+        if(o.ativa === false) return;
+        // colaborador só vê sua obra
+        if(currentRole !== "ADMIN" && currentUser) {
+          // será filtrado pelo perfil
+        }
+        const opt1 = document.createElement("option");
+        opt1.value = d.id; opt1.textContent = o.nome;
+        sel.appendChild(opt1);
+        if(filt) {
+          const opt2 = document.createElement("option");
+          opt2.value = d.id; opt2.textContent = o.nome;
+          filt.appendChild(opt2);
+        }
+      });
+      // pré-seleciona obra do colaborador
+      if(currentRole !== "ADMIN") {
+        const prof = await loadProfile(currentUser.uid);
+        if(prof?.obra_id) {
+          sel.value = prof.obra_id;
+          if(filt) filt.value = prof.obra_id;
+        }
+      }
+    } catch(_){}
+  }
+
+  function toggleReemb() {
+    const val  = $("lancReemb").value;
+    const novo = val === "nao" ? "sim" : "nao";
+    $("lancReemb").value = novo;
+    $("reembNao").classList.toggle("active-opt", novo === "nao");
+    $("reembSim").classList.toggle("active-opt", novo === "sim");
+  }
+
+  function onFileSelect() {
+    const file = $("lancFile").files[0];
+    if(!file) return;
+    if(file.size > 10 * 1024 * 1024) { toast("Arquivo muito grande (máx. 10MB)", false); return; }
+    selectedFile = file;
+    const prev = $("filePreview");
+    prev.className = "file-preview";
+    prev.innerHTML = `
+      <span style="font-size:1.4rem">${file.type.includes("pdf")?"📄":"🖼️"}</span>
+      <span class="file-name">${file.name}</span>
+      <button class="file-remove" onclick="App.removeFile()" title="Remover">✕</button>`;
+  }
+
+  function removeFile() {
+    selectedFile = null;
+    $("lancFile").value = "";
+    const prev = $("filePreview");
+    prev.className = "hidden";
+    prev.innerHTML = "";
+  }
+
+  async function uploadFile() {
+    if(!selectedFile) return null;
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+    fd.append("upload_preset", CLOUDINARY_PRESET);
+    fd.append("folder", "cfo");
+    try {
+      const r = await fetch(CLOUDINARY_URL, {method:"POST", body:fd});
+      const d = await r.json();
+      return { url: d.secure_url, tipo: selectedFile.type.includes("pdf") ? "pdf" : "imagem", nome: selectedFile.name };
+    } catch(e) { return null; }
+  }
+
+  // data de hoje como padrão
+  function setTodayDate() {
+    const d = $("lancData");
+    if(d && !d.value) d.value = new Date().toISOString().split("T")[0];
+  }
+
+  async function saveLanc() {
+    setMsg("lancMsg","");
+    const obra  = $("lancObra").value;
+    const data  = $("lancData").value;
+    const cat   = $("lancCategoria").value;
+    const desc  = $("lancDesc").value.trim();
+    const valor = parseFloat($("lancValor").value);
+    const reemb = $("lancReemb").value;
+    const btn   = $("btnSaveLanc");
+
+    if(!obra)        { setMsg("lancMsg","Selecione a obra.");return; }
+    if(!data)        { setMsg("lancMsg","Informe a data.");return; }
+    if(!cat)         { setMsg("lancMsg","Selecione a categoria.");return; }
+    if(!desc)        { setMsg("lancMsg","Informe a descrição.");return; }
+    if(isNaN(valor)||valor<=0) { setMsg("lancMsg","Informe um valor válido.");return; }
+
+    btn.disabled = true;
+    btn.textContent = selectedFile ? "Enviando arquivo..." : "Salvando...";
+
+    try {
+      let comprovante = null;
+      if(selectedFile) {
+        comprovante = await uploadFile();
+        if(!comprovante) { setMsg("lancMsg","Erro ao enviar arquivo. Tente novamente."); btn.disabled=false; btn.textContent="💾 Salvar Despesa"; return; }
+      }
+
+      // busca nome da obra
+      const obraDoc = await getDoc(doc(db,"obras",obra));
+      const obraNome = obraDoc.exists() ? obraDoc.data().nome : obra;
+
+      const prof = await loadProfile(currentUser.uid);
+      const lancData = {
+        obra_id:    obra,
+        obra_nome:  obraNome,
+        data,
+        categoria:  cat,
+        descricao:  desc,
+        valor,
+        reembolsavel: reemb === "sim",
+        comprovante,
+        colaborador_uid:  currentUser.uid,
+        colaborador_nome: prof?.nome || currentUser.email,
+        criadoEm: serverTimestamp()
+      };
+
+      if(editingLancId) {
+        await updateDoc(doc(db,"lancamentos",editingLancId), lancData);
+        toast("Despesa atualizada! ✅");
+      } else {
+        await setDoc(doc(db,"lancamentos","LANC_"+Date.now()), lancData);
+        toast("Despesa registrada! 💾");
+      }
+
+      // limpa form
+      $("lancObra").value=""; $("lancData").value=""; $("lancCategoria").value="";
+      $("lancDesc").value=""; $("lancValor").value="";
+      $("lancReemb").value="nao";
+      $("reembNao").classList.add("active-opt");
+      $("reembSim").classList.remove("active-opt");
+      removeFile();
+      editingLancId = null;
+      $("formLancTitle").textContent = "Nova Despesa";
+      $("btnCancelLanc").classList.add("hidden");
+      setMsg("lancMsg","✅ Despesa salva com sucesso!",true);
+      await loadLancs();
+      await updateStatTotal();
+    } catch(e) { setMsg("lancMsg","Erro: "+e.message); }
+    finally { btn.disabled=false; btn.textContent="💾 Salvar Despesa"; }
+  }
+
+  function cancelLanc() {
+    editingLancId = null;
+    $("formLancTitle").textContent = "Nova Despesa";
+    $("btnCancelLanc").classList.add("hidden");
+    $("lancObra").value=""; $("lancData").value=""; $("lancCategoria").value="";
+    $("lancDesc").value=""; $("lancValor").value="";
+    $("lancReemb").value="nao";
+    $("reembNao").classList.add("active-opt");
+    $("reembSim").classList.remove("active-opt");
+    removeFile(); setMsg("lancMsg","");
+  }
+
+  function editLanc(id) {
+    const l = allLancs.find(x=>x.id===id);
+    if(!l) return;
+    editingLancId = id;
+    $("formLancTitle").textContent = "Editar Despesa";
+    $("btnCancelLanc").classList.remove("hidden");
+    $("lancObra").value      = l.obra_id   || "";
+    $("lancData").value      = l.data      || "";
+    $("lancCategoria").value = l.categoria || "";
+    $("lancDesc").value      = l.descricao || "";
+    $("lancValor").value     = l.valor     || "";
+    const reemb = l.reembolsavel ? "sim" : "nao";
+    $("lancReemb").value = reemb;
+    $("reembNao").classList.toggle("active-opt", reemb==="nao");
+    $("reembSim").classList.toggle("active-opt", reemb==="sim");
+    $("formLancCard").scrollIntoView({behavior:"smooth"});
+  }
+
+  async function deleteLanc(id) {
+    showModal("Excluir despesa","Tem certeza que deseja excluir este lançamento?", async()=>{
+      try {
+        await deleteDoc(doc(db,"lancamentos",id));
+        toast("Despesa excluída.");
+        await loadLancs();
+        await updateStatTotal();
+      } catch(e){ toast("Erro: "+e.message,false); }
+    });
+  }
+
+  let allLancs = [];
+
+  async function loadLancs() {
+    const el=$("lancList"); if(!el) return;
+    el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>`;
+    try {
+      let q = query(collection(db,"lancamentos"), orderBy("criadoEm","desc"));
+      const snap = await getDocs(q);
+      allLancs = snap.docs.map(d=>({id:d.id,...d.data()}));
+
+      // filtra por obra se selecionado
+      const filtObra = $("filterLancObra")?.value || "";
+      // colaborador vê apenas sua obra
+      let list = allLancs;
+      if(currentRole !== "ADMIN") {
+        const prof = await loadProfile(currentUser.uid);
+        if(prof?.obra_id) list = list.filter(l=>l.obra_id===prof.obra_id);
+      } else if(filtObra) {
+        list = list.filter(l=>l.obra_id===filtObra);
+      }
+
+      if(!list.length){
+        el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><p>Nenhuma despesa registrada ainda.</p></div>`;
+        return;
+      }
+
+      const brl = n => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+      el.innerHTML="";
+      list.forEach(l=>{
+        const div=document.createElement("div");
+        div.className="lanc-item";
+        const dataFmt = l.data ? new Date(l.data+"T12:00:00").toLocaleDateString("pt-BR") : "—";
+        const compLink = l.comprovante?.url
+          ? `<a href="${l.comprovante.url}" target="_blank" style="font-size:.78rem;color:var(--brand);text-decoration:none">📎 Ver comprovante</a>`
+          : "";
+        div.innerHTML=`
+          <div class="lanc-item-top">
+            <div class="lanc-item-info">
+              <div class="lanc-item-cat">${l.categoria||"—"}</div>
+              <div class="lanc-item-desc">${l.descricao||"—"}</div>
+              <div class="lanc-item-sub">📅 ${dataFmt} · 🏗️ ${l.obra_nome||"—"} · 👤 ${l.colaborador_nome||"—"}</div>
+              <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <span class="badge-reemb ${l.reembolsavel?"sim":"nao"}">${l.reembolsavel?"🔄 Reembolsável":"✅ Empresa"}</span>
+                ${compLink}
+              </div>
+            </div>
+            <div class="lanc-item-valor">${brl(l.valor)}</div>
+          </div>
+          <div class="lanc-item-actions">
+            <button class="btn btn-outline sm" onclick="App.editLanc('${l.id}')">✏️ Editar</button>
+            <button class="btn btn-danger sm" onclick="App.deleteLanc('${l.id}')">🗑️ Excluir</button>
+          </div>`;
+        el.appendChild(div);
+      });
+    } catch(e){ el.innerHTML=`<p style="color:var(--danger);padding:12px">Erro ao carregar lançamentos.</p>`; }
+  }
+
+  async function updateStatTotal() {
+    try {
+      const snap = await getDocs(collection(db,"lancamentos"));
+      const hoje = new Date();
+      const mes = hoje.getMonth(), ano = hoje.getFullYear();
+      let total = 0, count = 0;
+      snap.forEach(d=>{
+        const l = d.data();
+        if(!l.data) return;
+        const [y,m] = l.data.split("-").map(Number);
+        if(y===ano && m-1===mes) { total+=Number(l.valor||0); count++; }
+      });
+      $("statTotal").textContent = total.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+      $("statCount").textContent = count;
+    } catch(_){}
+  }
+
+    window.App = {
     login, logout, togglePass, goTab, adminTab,
     changePassword,
     saveObra, loadObras, toggleObra,
     saveUser, loadUsers, filterUsers, toggleUser,
+    toggleReemb, onFileSelect, removeFile,
+    saveLanc, cancelLanc, editLanc, deleteLanc, loadLancs,
     closeModal
   };
 </script>
