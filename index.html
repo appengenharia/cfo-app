@@ -23,6 +23,7 @@
     .topbar-right{display:flex;align-items:center;gap:10px;}
     .pill{background:rgba(255,255,255,.12);color:#fff;font-size:.78rem;font-weight:500;padding:4px 12px;border-radius:20px;}
     .offline-banner{position:fixed;top:58px;left:0;right:0;z-index:99;background:var(--accent2);color:#fff;text-align:center;font-size:.82rem;font-weight:500;padding:6px 16px;}
+    .sync-banner{position:fixed;top:58px;left:0;right:0;z-index:99;background:var(--success);color:#fff;text-align:center;font-size:.82rem;font-weight:500;padding:6px 16px;}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;border:none;cursor:pointer;transition:all .18s;}
     .btn:disabled{opacity:.55;cursor:not-allowed;}
     .btn.full{width:100%;}
@@ -191,7 +192,10 @@
 </div>
 
 <div class="offline-banner hidden" id="offlineBanner">
-  ⚡ Você está offline — dados serão sincronizados quando a conexão voltar
+  ⚡ Você está offline — lançamentos serão sincronizados ao reconectar
+</div>
+<div class="sync-banner hidden" id="syncBanner">
+  🔄 Sincronizando lançamentos pendentes...
 </div>
 
 <!-- LOGIN -->
@@ -266,7 +270,7 @@
         <div class="stat-card"><div class="stat-label">Total do Mês</div><div class="stat-value" id="statTotal">R$ 0,00</div></div>
         <div class="stat-card c-accent"><div class="stat-label">Lançamentos</div><div class="stat-value" id="statCount">0</div></div>
         <div class="stat-card c-success"><div class="stat-label">Obras Ativas</div><div class="stat-value" id="statObras">0</div></div>
-        <div class="stat-card c-warning"><div class="stat-label">Colaboradores</div><div class="stat-value" id="statUsers">0</div></div>
+        <div class="stat-card c-warning"><div class="stat-label">Pendentes Sync</div><div class="stat-value" id="statPending">0</div></div>
       </div>
       <div class="card">
         <div class="empty">
@@ -627,6 +631,9 @@
     showPage("appLayout");
     goTab("dashboard");
     updateStatTotal();
+    updatePendingCount();
+    // Tenta sincronizar pendentes ao abrir o app
+    setTimeout(syncPendingLancs, 2000);
   }
 
   async function fillObraSelect() {
@@ -955,6 +962,38 @@
     btn.textContent = selectedFile ? "Enviando arquivo..." : "Salvando...";
 
     try {
+      const prof = await loadProfile(currentUser.uid);
+      const lancData = {
+        obra_id:          obra,
+        obra_nome:        "",
+        data,
+        categoria:        cat,
+        descricao:        desc,
+        valor,
+        reembolsavel:     reemb === "sim",
+        comprovante:      null,
+        colaborador_uid:  currentUser.uid,
+        colaborador_nome: prof?.nome || currentUser.email,
+      };
+
+      // Se offline, salva localmente e sai
+      if(!navigator.onLine) {
+        await saveOffline(lancData);
+        await updatePendingCount();
+        setMsg("lancMsg","📵 Salvo localmente! Será enviado quando a internet voltar.",true);
+        toast("📵 Salvo offline!");
+        // limpa form
+        $("lancObra").value=""; $("lancData").value=""; $("lancCategoria").value="";
+        $("lancDesc").value=""; $("lancValor").value="";
+        $("lancReemb").value="nao";
+        $("reembNao").classList.add("active-opt");
+        $("reembSim").classList.remove("active-opt");
+        removeFile();
+        btn.disabled=false; btn.textContent="💾 Salvar Despesa";
+        return;
+      }
+
+      // Online: upload foto se tiver
       let comprovante = null;
       if(selectedFile) {
         comprovante = await uploadFile();
@@ -963,22 +1002,9 @@
 
       // busca nome da obra
       const obraDoc = await getDoc(doc(db,"obras",obra));
-      const obraNome = obraDoc.exists() ? obraDoc.data().nome : obra;
-
-      const prof = await loadProfile(currentUser.uid);
-      const lancData = {
-        obra_id:    obra,
-        obra_nome:  obraNome,
-        data,
-        categoria:  cat,
-        descricao:  desc,
-        valor,
-        reembolsavel: reemb === "sim",
-        comprovante,
-        colaborador_uid:  currentUser.uid,
-        colaborador_nome: prof?.nome || currentUser.email,
-        criadoEm: serverTimestamp()
-      };
+      lancData.obra_nome  = obraDoc.exists() ? obraDoc.data().nome : obra;
+      lancData.comprovante = comprovante;
+      lancData.criadoEm   = serverTimestamp();
 
       if(editingLancId) {
         await updateDoc(doc(db,"lancamentos",editingLancId), lancData);
@@ -1120,13 +1146,120 @@
     } catch(_){}
   }
 
-    window.App = {
+  
+  // ══════════════════════════════
+  // OFFLINE / SYNC
+  // ══════════════════════════════
+  const OFFLINE_DB_NAME    = "cfo_offline";
+  const OFFLINE_DB_VERSION = 1;
+  const OFFLINE_STORE      = "lancamentos_pendentes";
+
+  function openOfflineDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(OFFLINE_DB_NAME, OFFLINE_DB_VERSION);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains(OFFLINE_STORE)){
+          db.createObjectStore(OFFLINE_STORE, {keyPath:"localId"});
+        }
+      };
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror   = e => reject(e.target.error);
+    });
+  }
+
+  async function saveOffline(lancData) {
+    const db    = await openOfflineDB();
+    const localId = "OFFLINE_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    const record  = { ...lancData, localId, syncStatus: "pending", savedAt: new Date().toISOString() };
+    return new Promise((resolve, reject) => {
+      const tx    = db.transaction(OFFLINE_STORE, "readwrite");
+      const store = tx.objectStore(OFFLINE_STORE);
+      store.add(record);
+      tx.oncomplete = () => resolve(localId);
+      tx.onerror    = e => reject(e.target.error);
+    });
+  }
+
+  async function getPendingOffline() {
+    const db = await openOfflineDB();
+    return new Promise((resolve, reject) => {
+      const tx    = db.transaction(OFFLINE_STORE, "readonly");
+      const store = tx.objectStore(OFFLINE_STORE);
+      const req   = store.getAll();
+      req.onsuccess = e => resolve(e.target.result||[]);
+      req.onerror   = e => reject(e.target.error);
+    });
+  }
+
+  async function deleteOfflineRecord(localId) {
+    const db = await openOfflineDB();
+    return new Promise((resolve, reject) => {
+      const tx    = db.transaction(OFFLINE_STORE, "readwrite");
+      const store = tx.objectStore(OFFLINE_STORE);
+      store.delete(localId);
+      tx.oncomplete = () => resolve();
+      tx.onerror    = e => reject(e.target.error);
+    });
+  }
+
+  async function updatePendingCount() {
+    try {
+      const pending = await getPendingOffline();
+      const el = $("statPending");
+      if(el) el.textContent = pending.length || "0";
+      // Mostra badge no nav se tiver pendentes
+      if(pending.length > 0) {
+        toast(`⏳ ${pending.length} lançamento(s) pendente(s) para sincronizar`, true);
+      }
+    } catch(_){}
+  }
+
+  async function syncPendingLancs() {
+    if(!navigator.onLine) return;
+    try {
+      const pending = await getPendingOffline();
+      if(!pending.length) return;
+      $("syncBanner")?.classList.remove("hidden");
+      let synced = 0;
+      for(const record of pending) {
+        try {
+          const { localId, syncStatus, savedAt, ...lancData } = record;
+          // Busca nome da obra
+          const obraDoc = await getDoc(doc(db,"obras", lancData.obra_id));
+          lancData.obra_nome = obraDoc.exists() ? obraDoc.data().nome : lancData.obra_id;
+          lancData.criadoEm  = serverTimestamp();
+          await setDoc(doc(db,"lancamentos","LANC_"+Date.now()+"_"+synced), lancData);
+          await deleteOfflineRecord(localId);
+          synced++;
+        } catch(e){ console.error("Erro ao sincronizar lançamento:", e); }
+      }
+      if(synced > 0) {
+        toast(`✅ ${synced} lançamento(s) sincronizado(s)!`);
+        await loadLancs();
+        await updateStatTotal();
+      }
+      await updatePendingCount();
+      $("syncBanner")?.classList.add("hidden");
+    } catch(e){ 
+      console.error("Erro na sincronização:", e);
+      $("syncBanner")?.classList.add("hidden");
+    }
+  }
+
+  // Ouve reconexão para sincronizar automaticamente
+  window.addEventListener("online", () => {
+    setTimeout(syncPendingLancs, 1500);
+  });
+
+  window.App = {
     login, logout, togglePass, goTab, adminTab,
     changePassword,
     saveObra, loadObras, toggleObra,
     saveUser, loadUsers, filterUsers, toggleUser,
     toggleReemb, onFileSelect, removeFile,
     saveLanc, cancelLanc, editLanc, deleteLanc, loadLancs,
+    syncPendingLancs,
     closeModal
   };
 </script>
