@@ -7,6 +7,9 @@
   <title>CFO — Controle Financeiro</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -395,8 +398,65 @@
 
     <!-- RELATÓRIOS -->
     <div class="tab-panel" id="tab-relatorios">
-      <div class="page-header"><h1>Relatórios</h1><p>Visualize e exporte os dados por obra e período.</p></div>
-      <div class="card"><div class="empty"><div class="empty-icon">📋</div><p>Relatórios — Parte 6.</p></div></div>
+      <div class="page-header"><h1>Relatórios</h1><p>Gere e exporte relatórios de despesas por obra e período.</p></div>
+
+      <!-- FILTROS RELATÓRIO -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:140px">
+            <label style="margin-top:0">Obra</label>
+            <select id="relObra"></select>
+          </div>
+          <div style="flex:1;min-width:140px" id="relColabWrap">
+            <label style="margin-top:0">Colaborador</label>
+            <select id="relColab">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="margin-top:0">De</label>
+            <input type="date" id="relDe">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="margin-top:0">Até</label>
+            <input type="date" id="relAte">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="App.previewRelatorio()">👁️ Visualizar</button>
+          <button class="btn btn-success" onclick="App.gerarPDF()">📄 Baixar PDF</button>
+          <button class="btn btn-outline" id="btnEnviarEmail" onclick="App.enviarRelatorioEmail()" style="display:none">📧 Enviar por E-mail</button>
+        </div>
+        <div class="msg" id="relMsg"></div>
+      </div>
+
+      <!-- PREVIEW -->
+      <div class="card hidden" id="relPreview">
+        <div id="relPreviewContent"></div>
+      </div>
+
+      <!-- CONFIGURAÇÕES DE E-MAIL (só admin) -->
+      <div class="card hidden" id="relEmailConfig">
+        <div class="card-header">
+          <div><h3>⚙️ Configurações de Envio</h3><p>Destinatários do relatório mensal.</p></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:.82rem;color:var(--muted)">Envio automático</span>
+            <div class="reemb-toggle" style="width:160px">
+              <button class="reemb-opt active-opt" id="envAutoSim" onclick="App.setEnvioAuto(true)">🤖 Automático</button>
+              <button class="reemb-opt" id="envAutoNao" onclick="App.setEnvioAuto(false)">✋ Manual</button>
+            </div>
+          </div>
+        </div>
+        <div id="emailDestinatarios">
+          <label>Destinatários (até 5 e-mails)</label>
+          <div id="emailList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+          <button class="btn btn-outline sm" style="margin-top:10px" onclick="App.addEmailDest()">+ Adicionar e-mail</button>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-primary" onclick="App.saveEmailConfig()">💾 Salvar Configurações</button>
+        </div>
+        <div class="msg" id="emailConfigMsg"></div>
+      </div>
     </div>
 
     <!-- ADMIN -->
@@ -573,6 +633,7 @@
     if(tab==="admin")      { loadObras(); fillObraSelect(); }
     if(tab==="lancamentos") { fillLancObras(); loadLancs(); setTodayDate(); }
     if(tab==="dashboard")   { fillDashFilters().then(()=>loadDashboard()); }
+    if(tab==="relatorios")  { fillRelatorioFiltros(); }
   }
 
   function adminTab(tab) {
@@ -693,6 +754,7 @@
     goTab("dashboard");
     updatePendingCount();
     setTimeout(syncPendingLancs, 2000);
+    setTimeout(verificarFechamentoMensal, 3000);
   }
 
   async function fillObraSelect() {
@@ -1548,6 +1610,287 @@
     alocUserId = null;
   }
 
+
+  // ══════════════════════════════
+  // RELATÓRIOS — PARTE 6
+  // ══════════════════════════════
+  const EMAILJS_SERVICE  = "service_3termna";
+  const EMAILJS_TEMPLATE = "template_4f1db2i";
+  const EMAILJS_KEY      = "ja6wdJjmvOxLKziFp";
+
+  if(typeof emailjs !== "undefined") emailjs.init(EMAILJS_KEY);
+
+  const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+  async function fillRelatorioFiltros() {
+    const selObra  = $("relObra");
+    const selColab = $("relColab");
+    if(!selObra) return;
+    try {
+      const obrasSnap = await getDocs(collection(db,"obras"));
+      selObra.innerHTML = "";
+      if(currentRole === "ADMIN") {
+        selObra.innerHTML = '<option value="">Todas as obras</option>';
+        obrasSnap.forEach(d => {
+          if(d.data().ativa === false) return;
+          const o = document.createElement("option");
+          o.value = d.id; o.textContent = d.data().nome;
+          selObra.appendChild(o);
+        });
+        const usersSnap = await getDocs(collection(db,"usuarios"));
+        if(selColab) {
+          selColab.innerHTML = '<option value="">Todos</option>';
+          usersSnap.forEach(d => {
+            if(d.data().ativo === false) return;
+            const o = document.createElement("option");
+            o.value = d.data().uid; o.textContent = d.data().nome || d.data().email;
+            selColab.appendChild(o);
+          });
+        }
+        $("relColabWrap").style.display = "";
+        $("relEmailConfig")?.classList.remove("hidden");
+        $("btnEnviarEmail").style.display = "";
+        loadEmailConfig();
+      } else {
+        const prof = await loadProfile(currentUser.uid);
+        const obrasDoColab = prof?.obras?.length ? prof.obras : (prof?.obra_id ? [prof.obra_id] : []);
+        selObra.innerHTML = '<option value="">Todas as minhas obras</option>';
+        obrasSnap.forEach(d => {
+          if(d.data().ativa === false) return;
+          if(!obrasDoColab.includes(d.id)) return;
+          const o = document.createElement("option");
+          o.value = d.id; o.textContent = d.data().nome;
+          selObra.appendChild(o);
+        });
+        if(selColab) selColab.innerHTML = '<option value="">Todos</option><option value="' + currentUser.uid + '" selected>' + ((await loadProfile(currentUser.uid))?.nome || currentUser.email) + '</option>';
+        $("relColabWrap").style.display = "";
+        $("relEmailConfig")?.classList.add("hidden");
+        $("btnEnviarEmail").style.display = "none";
+      }
+      const hoje = new Date();
+      const y = hoje.getFullYear(), m = String(hoje.getMonth()+1).padStart(2,"0");
+      $("relDe").value  = y+"-"+m+"-01";
+      $("relAte").value = y+"-"+m+"-"+new Date(y,hoje.getMonth()+1,0).getDate().toString().padStart(2,"0");
+    } catch(e){ console.error(e); }
+  }
+
+  async function getLancsFiltrados() {
+    const obraFilt  = $("relObra")?.value  || "";
+    const colabFilt = $("relColab")?.value || "";
+    const deFilt    = $("relDe")?.value    || "";
+    const ateFilt   = $("relAte")?.value   || "";
+    let snap = await getDocs(query(collection(db,"lancamentos"), orderBy("data","asc")));
+    let lancs = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    if(currentRole !== "ADMIN") {
+      const prof = await loadProfile(currentUser.uid);
+      const obras = prof?.obras?.length ? prof.obras : (prof?.obra_id ? [prof.obra_id] : []);
+      lancs = lancs.filter(l => obras.includes(l.obra_id));
+    }
+    if(obraFilt)  lancs = lancs.filter(l => l.obra_id === obraFilt);
+    if(colabFilt) lancs = lancs.filter(l => l.colaborador_uid === colabFilt);
+    if(deFilt)    lancs = lancs.filter(l => l.data >= deFilt);
+    if(ateFilt)   lancs = lancs.filter(l => l.data <= ateFilt);
+    return lancs;
+  }
+
+  function formatDate(d) {
+    if(!d) return "—";
+    const parts = d.split("-");
+    return parts[2]+"/"+parts[1]+"/"+parts[0];
+  }
+
+  async function previewRelatorio() {
+    const prev = $("relPreview");
+    const cont = $("relPreviewContent");
+    if(!prev||!cont) return;
+    setMsg("relMsg","");
+    cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>';
+    prev.classList.remove("hidden");
+    try {
+      const lancs = await getLancsFiltrados();
+      if(!lancs.length) {
+        cont.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>Nenhum lançamento no período.</p></div>';
+        return;
+      }
+      const obraNome = $("relObra")?.selectedOptions[0]?.text || "Todas as obras";
+      const deFmt  = $("relDe")?.value  ? formatDate($("relDe").value)  : "—";
+      const ateFmt = $("relAte")?.value ? formatDate($("relAte").value) : "—";
+      const brl = n => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+      const cats = Object.keys(CATEGORIAS_CORES);
+      const totCat = {}; cats.forEach(c=>totCat[c]=0);
+      let totalGeral=0, totalReemb=0, totalEmp=0;
+      lancs.forEach(l => {
+        const v = Number(l.valor||0);
+        const cat = cats.includes(l.categoria)?l.categoria:"Outros gastos";
+        totCat[cat]+=v; totalGeral+=v;
+        if(l.reembolsavel) totalReemb+=v; else totalEmp+=v;
+      });
+      const rows = lancs.map(l =>
+        "<tr><td>"+formatDate(l.data)+"</td><td>"+( l.categoria||"—")+"</td><td>"+(l.descricao||"—")+"</td><td>"+(l.colaborador_nome||"—")+"</td><td style='text-align:right;font-weight:600'>"+brl(l.valor)+"</td><td style='text-align:center'>"+(l.reembolsavel?'<span style="color:#f59e0b;font-size:.75rem;font-weight:600">REIMB.</span>':'<span style="color:#10b981;font-size:.75rem;font-weight:600">EMP.</span>')+"</td><td style='text-align:center'>"+(l.comprovante?.url?'<a href="'+l.comprovante.url+'" target="_blank" style="color:var(--brand);font-size:.78rem">📎</a>':"—")+"</td></tr>"
+      ).join("");
+      const catRows = cats.map(c =>
+        "<tr><td><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+CATEGORIAS_CORES[c]+";margin-right:6px'></span>"+c+"</td><td style='text-align:right;font-weight:600'>"+brl(totCat[c])+"</td></tr>"
+      ).join("");
+      cont.innerHTML =
+        '<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px"><div><h2 style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:700;color:var(--brand)">🏗️ '+obraNome+'</h2><p style="font-size:.85rem;color:var(--muted)">Período: '+deFmt+' a '+ateFmt+'</p></div><div style="text-align:right"><div style="font-size:.78rem;color:var(--muted)">Total Geral</div><div style="font-family:Syne,sans-serif;font-size:1.4rem;font-weight:800;color:var(--accent)">'+brl(totalGeral)+'</div><div style="font-size:.75rem;color:var(--muted);margin-top:2px">Empresa: '+brl(totalEmp)+' · Reembolsável: '+brl(totalReemb)+'</div></div></div></div>' +
+        '<div style="overflow-x:auto;margin-bottom:24px"><table class="dash-table" style="font-size:.82rem"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Colaborador</th><th style="text-align:right">Valor</th><th style="text-align:center">Tipo</th><th style="text-align:center">Nota</th></tr></thead><tbody>'+rows+'</tbody><tr class="total-row"><td colspan="4">TOTAL GERAL</td><td style="text-align:right">'+brl(totalGeral)+'</td><td colspan="2"></td></tr></table></div>' +
+        '<div style="max-width:360px"><table class="dash-table"><thead><tr><th>Monitoramento por Categoria</th><th style="text-align:right">Total Acumulado</th></tr></thead><tbody>'+catRows+'<tr class="total-row"><td>TOTAL GERAL</td><td style="text-align:right">'+brl(totalGeral)+'</td></tr></tbody></table></div>';
+    } catch(e){ cont.innerHTML='<p style="color:var(--danger)">Erro ao gerar preview.</p>'; }
+  }
+
+  async function gerarPDF() {
+    setMsg("relMsg","⏳ Gerando PDF...");
+    try {
+      const lancs = await getLancsFiltrados();
+      if(!lancs.length) { setMsg("relMsg","⚠️ Nenhum lançamento no período."); return null; }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+      const brl = n => "R$ "+Number(n||0).toLocaleString("pt-BR",{minimumFractionDigits:2});
+      const obraNome = $("relObra")?.selectedOptions[0]?.text || "Todas as obras";
+      const deFmt  = $("relDe")?.value  ? formatDate($("relDe").value)  : "—";
+      const ateFmt = $("relAte")?.value ? formatDate($("relAte").value) : "—";
+      // Cabeçalho
+      doc.setFillColor(15,52,96); doc.rect(0,0,210,28,"F");
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(16); doc.setFont("helvetica","bold");
+      doc.text("CFO — Controle Financeiro de Obras", 14, 12);
+      doc.setFontSize(10); doc.setFont("helvetica","normal");
+      doc.text("Obra: "+obraNome, 14, 20);
+      doc.text("Período: "+deFmt+" a "+ateFmt, 14, 26);
+      // Tabela lançamentos
+      doc.setTextColor(0,0,0);
+      doc.setFontSize(11); doc.setFont("helvetica","bold");
+      doc.text("Lançamentos", 14, 38);
+      const rows = lancs.map(l => [formatDate(l.data), l.categoria||"—", (l.descricao||"—").substring(0,30), (l.colaborador_nome||"—").substring(0,20), brl(l.valor), l.reembolsavel?"Reimb.":"Empresa"]);
+      doc.autoTable({startY:42, head:[["Data","Categoria","Descrição","Colaborador","Valor","Tipo"]], body:rows, styles:{fontSize:8,cellPadding:2}, headStyles:{fillColor:[15,52,96],textColor:255,fontStyle:"bold"}, alternateRowStyles:{fillColor:[245,247,250]}, columnStyles:{4:{halign:"right"},5:{halign:"center"}}, margin:{left:14,right:14}});
+      // Resumo por categoria
+      const cats = Object.keys(CATEGORIAS_CORES);
+      const totCat = {}; cats.forEach(c=>totCat[c]=0);
+      let totalGeral=0,totalReemb=0,totalEmp=0;
+      lancs.forEach(l=>{
+        const v=Number(l.valor||0), cat=cats.includes(l.categoria)?l.categoria:"Outros gastos";
+        totCat[cat]+=v; totalGeral+=v;
+        if(l.reembolsavel) totalReemb+=v; else totalEmp+=v;
+      });
+      const finalY = doc.lastAutoTable.finalY + 10;
+      doc.setFontSize(11); doc.setFont("helvetica","bold");
+      doc.text("Monitoramento por Categoria", 14, finalY);
+      const catRows = cats.map(c => [c, brl(totCat[c])]);
+      catRows.push(["TOTAL GERAL", brl(totalGeral)]);
+      doc.autoTable({startY:finalY+4, head:[["Categoria","Total Acumulado"]], body:catRows, styles:{fontSize:9,cellPadding:2}, headStyles:{fillColor:[15,52,96],textColor:255,fontStyle:"bold"}, columnStyles:{1:{halign:"right"}}, didParseCell:(d)=>{ if(d.row.index===catRows.length-1){d.cell.styles.fontStyle="bold";d.cell.styles.textColor=[233,69,96];}}, margin:{left:14,right:14}});
+      // Rodapé
+      const pg = doc.internal.getNumberOfPages();
+      for(let i=1;i<=pg;i++){
+        doc.setPage(i); doc.setFontSize(7); doc.setTextColor(150,150,150);
+        doc.text("CFO — Relatório gerado em "+new Date().toLocaleDateString("pt-BR")+" · Pág. "+i+"/"+pg, 14, 292);
+        doc.text("Empresa: "+brl(totalEmp)+" · Reembolsável: "+brl(totalReemb), 196, 292, {align:"right"});
+      }
+      const fileName = "CFO_"+obraNome.replace(/\s+/g,"_")+"_"+deFmt.replace(/\//g,"-")+".pdf";
+      doc.save(fileName);
+      setMsg("relMsg","✅ PDF gerado com sucesso!",true);
+      return doc.output("datauristring");
+    } catch(e){ console.error(e); setMsg("relMsg","❌ Erro ao gerar PDF: "+e.message); return null; }
+  }
+
+  async function loadEmailConfig() {
+    try {
+      const snap = await getDoc(doc(db,"configuracoes","email"));
+      if(!snap.exists()){ renderEmailList([]); return; }
+      const cfg = snap.data();
+      renderEmailList(cfg.destinatarios||[]);
+      envioAutomatico = cfg.envioAutomatico !== false;
+      $("envAutoSim")?.classList.toggle("active-opt", envioAutomatico);
+      $("envAutoNao")?.classList.toggle("active-opt", !envioAutomatico);
+    } catch(e){}
+  }
+
+  function renderEmailList(emails) {
+    const el = $("emailList"); if(!el) return;
+    el.innerHTML = "";
+    (emails.length?emails:[""]).forEach((email,i) => {
+      const div = document.createElement("div");
+      div.style.cssText = "display:flex;gap:8px;align-items:center";
+      div.innerHTML = '<input type="email" value="'+email+'" placeholder="email@exemplo.com" style="flex:1"><button class="btn btn-outline sm" style="padding:6px 10px" onclick="this.parentElement.remove()">✕</button>';
+      el.appendChild(div);
+    });
+  }
+
+  function addEmailDest() {
+    const el = $("emailList"); if(!el) return;
+    if(el.children.length >= 5){ toast("Máximo 5 e-mails!",false); return; }
+    const div = document.createElement("div");
+    div.style.cssText = "display:flex;gap:8px;align-items:center";
+    div.innerHTML = '<input type="email" placeholder="email@exemplo.com" style="flex:1"><button class="btn btn-outline sm" style="padding:6px 10px" onclick="this.parentElement.remove()">✕</button>';
+    el.appendChild(div);
+  }
+
+  let envioAutomatico = true;
+  function setEnvioAuto(val) {
+    envioAutomatico = val;
+    $("envAutoSim")?.classList.toggle("active-opt", val);
+    $("envAutoNao")?.classList.toggle("active-opt", !val);
+  }
+
+  async function saveEmailConfig() {
+    const inputs = $("emailList")?.querySelectorAll("input[type=email]")||[];
+    const emails = Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+    if(!emails.length){ setMsg("emailConfigMsg","Adicione ao menos um e-mail."); return; }
+    try {
+      await setDoc(doc(db,"configuracoes","email"),{destinatarios:emails, envioAutomatico, atualizadoEm:serverTimestamp(), atualizadoPor:currentUser.uid});
+      toast("Configurações salvas! ✅");
+      setMsg("emailConfigMsg","✅ Salvo com sucesso!",true);
+    } catch(e){ setMsg("emailConfigMsg","Erro: "+e.message); }
+  }
+
+  async function enviarRelatorioEmail() {
+    setMsg("relMsg","⏳ Preparando e-mail...");
+    try {
+      const lancs = await getLancsFiltrados();
+      if(!lancs.length){ setMsg("relMsg","⚠️ Nenhum lançamento no período."); return; }
+      const cfgSnap = await getDoc(doc(db,"configuracoes","email"));
+      const emails  = cfgSnap.exists()?(cfgSnap.data().destinatarios||[]):[];
+      if(!emails.length){ setMsg("relMsg","⚠️ Configure os e-mails primeiro."); return; }
+      const obraNome = $("relObra")?.selectedOptions[0]?.text || "Todas as obras";
+      const deFmt  = $("relDe")?.value  ? formatDate($("relDe").value)  : "—";
+      const ateFmt = $("relAte")?.value ? formatDate($("relAte").value) : "—";
+      const brl = n => "R$ "+Number(n||0).toLocaleString("pt-BR",{minimumFractionDigits:2});
+      const cats = Object.keys(CATEGORIAS_CORES);
+      const totCat={}; cats.forEach(c=>totCat[c]=0);
+      let totalGeral=0,totalReemb=0,totalEmp=0;
+      lancs.forEach(l=>{ const v=Number(l.valor||0),cat=cats.includes(l.categoria)?l.categoria:"Outros gastos"; totCat[cat]+=v;totalGeral+=v; if(l.reembolsavel)totalReemb+=v;else totalEmp+=v; });
+      const tabCats = cats.map(c=>"  "+c+": "+brl(totCat[c])).join("\n");
+      const message = "Relatório de Despesas — "+obraNome+"\nPeríodo: "+deFmt+" a "+ateFmt+"\n\nTotal de lançamentos: "+lancs.length+"\nTotal Geral: "+brl(totalGeral)+"\nEmpresa: "+brl(totalEmp)+"\nReembolsável: "+brl(totalReemb)+"\n\nPor Categoria:\n"+tabCats+"\n\nCFO — Controle Financeiro de Obras";
+      if(typeof emailjs==="undefined"){ setMsg("relMsg","❌ EmailJS não carregado."); return; }
+      emailjs.init(EMAILJS_KEY);
+      let enviados=0;
+      for(const email of emails){
+        await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {to_email:email, obra_nome:obraNome, periodo:deFmt+" a "+ateFmt, message});
+        enviados++;
+      }
+      await setDoc(doc(db,"relatorios_enviados","REL_"+Date.now()),{obra_nome:obraNome, periodo_de:$("relDe")?.value, periodo_ate:$("relAte")?.value, total:totalGeral, enviado_por:currentUser.uid, enviado_em:serverTimestamp(), destinatarios:emails});
+      toast("✅ Relatório enviado para "+enviados+" e-mail(s)!");
+      setMsg("relMsg","✅ Enviado para "+enviados+" destinatário(s)!",true);
+    } catch(e){ console.error(e); setMsg("relMsg","❌ Erro ao enviar: "+e.message); }
+  }
+
+  async function verificarFechamentoMensal() {
+    if(currentRole !== "ADMIN") return;
+    try {
+      const hoje = new Date();
+      if(hoje.getDate() !== 1) return;
+      const cfgSnap = await getDoc(doc(db,"configuracoes","email"));
+      if(!cfgSnap.exists()||!cfgSnap.data().envioAutomatico) return;
+      const chave = "fechamento_"+hoje.getFullYear()+"_"+hoje.getMonth();
+      if(localStorage.getItem(chave)) return;
+      const mesAnt = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+      const ultimo = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+      $("relDe").value  = mesAnt.toISOString().split("T")[0];
+      $("relAte").value = ultimo.toISOString().split("T")[0];
+      await enviarRelatorioEmail();
+      localStorage.setItem(chave,"1");
+    } catch(e){ console.error("Erro no fechamento mensal:",e); }
+  }
+
   window.App = {
     login, logout, togglePass, goTab, adminTab,
     changePassword,
@@ -1558,6 +1901,8 @@
     saveLanc, cancelLanc, editLanc, deleteLanc, loadLancs,
     syncPendingLancs,
     loadDashboard, onDashObraChange, clearDashFilters,
+    previewRelatorio, gerarPDF, enviarRelatorioEmail,
+    addEmailDest, saveEmailConfig, setEnvioAuto,
     closeModal
   };
 </script>
