@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -18,18 +17,12 @@
     }
     html,body { height:100%; font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; }
     .hidden { display:none !important; }
-
-    /* TOPBAR */
     .topbar { position:fixed; top:0; left:0; right:0; z-index:100; height:58px; background:var(--brand2); display:flex; align-items:center; justify-content:space-between; padding:0 20px; box-shadow:0 2px 12px rgba(0,0,0,.25); }
     .topbar-brand { font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; color:#fff; display:flex; align-items:center; gap:8px; }
     .topbar-brand .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
     .topbar-right { display:flex; align-items:center; gap:10px; }
     .pill { background:rgba(255,255,255,.12); color:#fff; font-size:.78rem; font-weight:500; padding:4px 12px; border-radius:20px; }
-
-    /* OFFLINE */
     .offline-banner { position:fixed; top:58px; left:0; right:0; z-index:99; background:var(--accent2); color:#fff; text-align:center; font-size:.82rem; font-weight:500; padding:6px 16px; }
-
-    /* BUTTONS */
     .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 18px; border-radius:var(--radius); font-family:'DM Sans',sans-serif; font-size:.9rem; font-weight:500; border:none; cursor:pointer; transition:all .18s; }
     .btn:disabled { opacity:.55; cursor:not-allowed; }
     .btn.full { width:100%; }
@@ -38,13 +31,10 @@
     .btn-primary:hover:not(:disabled) { background:#0a2744; transform:translateY(-1px); }
     .btn-danger  { background:var(--danger); color:#fff; }
     .btn-danger:hover:not(:disabled) { background:#dc2626; }
-    .btn-success { background:var(--success); color:#fff; }
     .btn-ghost   { background:transparent; color:rgba(255,255,255,.8); border:1px solid rgba(255,255,255,.25); }
     .btn-ghost:hover { background:rgba(255,255,255,.1); color:#fff; }
     .btn-outline { background:transparent; color:var(--brand); border:1.5px solid var(--border); }
     .btn-outline:hover { border-color:var(--brand); }
-
-    /* FORM */
     label { display:block; font-size:.82rem; font-weight:500; color:var(--muted); margin-bottom:6px; margin-top:16px; }
     label:first-of-type { margin-top:0; }
     input, select, textarea { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:.92rem; background:#f8f9fc; color:var(--text); transition:border-color .18s,box-shadow .18s; outline:none; }
@@ -55,21 +45,15 @@
     .eye-btn:hover { color:var(--brand); }
     .row { display:flex; gap:10px; }
     .row > * { flex:1; }
-
-    /* MESSAGES */
     .msg { font-size:.84rem; margin-top:10px; min-height:20px; border-radius:8px; }
     .msg.ok  { color:var(--success); background:#ecfdf5; padding:8px 12px; }
     .msg.err { color:var(--danger);  background:#fef2f2; padding:8px 12px; }
-
-    /* LOADING */
     .loading-screen { position:fixed; inset:0; z-index:9999; background:var(--brand2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
     .loading-screen .l-logo { font-family:'Syne',sans-serif; font-weight:800; font-size:2.2rem; color:#fff; }
     .loading-screen .l-logo span { color:var(--accent); }
     .spinner { width:36px; height:36px; border:3px solid rgba(255,255,255,.2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .loading-screen p { color:rgba(255,255,255,.5); font-size:.85rem; }
-
-    /* LOGIN */
     .login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px; background:linear-gradient(135deg,#16213e 0%,#0f3460 60%,#1a1a2e 100%); position:relative; overflow:hidden; }
     .login-page::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 50% at 80% 20%,rgba(233,69,96,.15) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 10% 80%,rgba(245,166,35,.10) 0%,transparent 55%); pointer-events:none; }
     .deco { position:absolute; border-radius:50%; pointer-events:none; }
@@ -85,14 +69,11 @@
     .login-box .subtitle { font-size:.88rem; color:var(--muted); margin-bottom:24px; }
     .login-box .btn-primary { margin-top:20px; padding:13px; font-size:.95rem; font-weight:600; border-radius:12px; }
     .login-hint { margin-top:16px; text-align:center; font-size:.78rem; color:var(--muted); }
-
-    /* APP LAYOUT */
     .app-layout { padding-top:58px; min-height:100vh; display:flex; flex-direction:column; }
     .bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; background:var(--brand2); display:flex; height:60px; box-shadow:0 -2px 12px rgba(0,0,0,.2); }
     .bottom-nav .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:rgba(255,255,255,.5); font-size:.65rem; font-weight:500; cursor:pointer; border:none; background:none; transition:color .18s; }
     .bottom-nav .nav-item .nav-icon { font-size:1.2rem; line-height:1; }
     .bottom-nav .nav-item.active { color:#fff; }
-
     @media (min-width:768px) {
       .bottom-nav { display:none; }
       .app-layout { flex-direction:row; }
@@ -103,22 +84,16 @@
       .side-nav .nav-item.active { background:var(--brand); color:#fff; }
       .side-nav .nav-divider { height:1px; background:rgba(255,255,255,.08); margin:8px 0; }
     }
-
     .app-content { flex:1; padding:24px 16px 80px; }
     @media (min-width:768px) { .app-content { padding:28px; } }
-
     .tab-panel { display:none; }
     .tab-panel.active { display:block; animation:fadeIn .2s ease; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
-    /* WELCOME */
     .welcome-card { background:linear-gradient(135deg,var(--brand),#1a4a8a); border-radius:var(--radius); padding:24px 28px; color:#fff; margin-bottom:20px; position:relative; overflow:hidden; }
     .welcome-card::after { content:'💼'; position:absolute; right:24px; top:50%; transform:translateY(-50%); font-size:3.5rem; opacity:.12; }
     .welcome-card h2 { font-family:'Syne',sans-serif; font-weight:700; font-size:1.25rem; margin-bottom:4px; }
     .welcome-card p { font-size:.88rem; opacity:.8; }
     .welcome-card .badge { display:inline-block; margin-top:12px; background:rgba(255,255,255,.2); border-radius:20px; padding:4px 12px; font-size:.78rem; font-weight:600; }
-
-    /* STATS */
     .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
     @media (min-width:600px) { .stats-grid { grid-template-columns:repeat(4,1fr); } }
     .stat-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; border-left:3px solid var(--brand); }
@@ -127,54 +102,37 @@
     .stat-card.c-warning { border-left-color:var(--accent2); }
     .stat-label { font-size:.72rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.5px; }
     .stat-value { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:700; color:var(--text); margin-top:4px; }
-
-    /* CARD */
     .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; margin-bottom:16px; }
     .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
     .card-header h3 { font-family:'Syne',sans-serif; font-weight:700; font-size:1.05rem; }
     .card-header p  { font-size:.82rem; color:var(--muted); margin-top:2px; }
-
-    /* PAGE HEADER */
     .page-header { margin-bottom:20px; }
     .page-header h1 { font-family:'Syne',sans-serif; font-weight:700; font-size:1.35rem; }
     .page-header p  { font-size:.88rem; color:var(--muted); margin-top:2px; }
-
-    /* ADMIN TABS */
     .admin-tabs { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
     .admin-tab-btn { padding:8px 16px; border-radius:8px; border:1.5px solid var(--border); background:#fff; font-size:.84rem; font-weight:500; cursor:pointer; transition:all .18s; color:var(--muted); }
     .admin-tab-btn.active { background:var(--brand); color:#fff; border-color:var(--brand); }
     .admin-tab-btn:hover:not(.active) { border-color:var(--brand); color:var(--brand); }
     .admin-panel { display:none; }
     .admin-panel.active { display:block; }
-
-    /* LIST ITEMS */
-    .list-container { margin-top:16px; display:flex; flex-direction:column; gap:8px; }
-    .list-item { display:flex; align-items:center; justify-content:space-between; background:#f8f9fc; border:1px solid var(--border); border-radius:10px; padding:12px 16px; gap:10px; }
+    .list-item { display:flex; align-items:center; justify-content:space-between; background:#f8f9fc; border:1px solid var(--border); border-radius:10px; padding:12px 16px; gap:10px; margin-bottom:8px; }
     .list-item-info { flex:1; min-width:0; }
     .list-item-name { font-weight:600; font-size:.9rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .list-item-sub  { font-size:.78rem; color:var(--muted); margin-top:2px; }
     .list-item-actions { display:flex; gap:6px; flex-shrink:0; }
-    .badge-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600; }
-    .badge-status.active  { background:#ecfdf5; color:var(--success); }
-    .badge-status.inactive{ background:#fef2f2; color:var(--danger); }
-    .badge-status.admin   { background:#eff6ff; color:var(--brand); }
-    .badge-status.user    { background:#f3f4f6; color:var(--muted); }
-
-    /* DIVIDER */
+    .badge-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:600; flex-shrink:0; }
+    .badge-status.active   { background:#ecfdf5; color:var(--success); }
+    .badge-status.inactive { background:#fef2f2; color:var(--danger); }
+    .badge-status.admin    { background:#eff6ff; color:var(--brand); }
+    .badge-status.user     { background:#f3f4f6; color:var(--muted); }
     .divider { height:1px; background:var(--border); margin:20px 0; }
-
-    /* EMPTY */
     .empty { text-align:center; padding:40px 20px; color:var(--muted); }
     .empty .empty-icon { font-size:2.5rem; margin-bottom:10px; }
     .empty p { font-size:.88rem; }
-
-    /* MODAL */
-    .modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; animation:fadeIn .15s ease; }
+    .modal-overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; }
     .modal { background:#fff; border-radius:20px; padding:28px; width:100%; max-width:440px; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:slideUp .2s ease; }
     .modal h3 { font-family:'Syne',sans-serif; font-weight:700; font-size:1.15rem; margin-bottom:20px; }
     .modal-footer { display:flex; gap:10px; margin-top:24px; justify-content:flex-end; }
-
-    /* TOAST */
     .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:300; padding:12px 20px; border-radius:12px; font-size:.88rem; font-weight:500; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.2); animation:toastIn .3s ease; white-space:nowrap; }
     .toast.ok  { background:var(--success); }
     .toast.err { background:var(--danger); }
@@ -184,14 +142,12 @@
 </head>
 <body>
 
-<!-- LOADING -->
 <div class="loading-screen" id="loadingScreen">
   <div class="l-logo">CF<span>O</span></div>
   <div class="spinner"></div>
   <p>Carregando...</p>
 </div>
 
-<!-- TOPBAR -->
 <div class="topbar hidden" id="topbar">
   <div class="topbar-brand"><span class="dot"></span>CFO — Controle Financeiro</div>
   <div class="topbar-right">
@@ -200,12 +156,11 @@
   </div>
 </div>
 
-<!-- OFFLINE -->
 <div class="offline-banner hidden" id="offlineBanner">
   ⚡ Você está offline — dados serão sincronizados quando a conexão voltar
 </div>
 
-<!-- ══ LOGIN ══ -->
+<!-- LOGIN -->
 <div class="login-page hidden" id="loginPage">
   <div class="deco deco-1"></div><div class="deco deco-2"></div>
   <div class="login-box">
@@ -228,10 +183,9 @@
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- APP -->
 <div class="app-layout hidden" id="appLayout">
 
-  <!-- SIDE NAV -->
   <nav class="side-nav hidden" id="sideNav">
     <button class="nav-item active" onclick="App.goTab('dashboard')" data-tab="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
     <button class="nav-item" onclick="App.goTab('lancamentos')" data-tab="lancamentos"><span class="nav-icon">➕</span> Lançamentos</button>
@@ -259,7 +213,7 @@
         <div class="empty">
           <div class="empty-icon">🚧</div>
           <p>Dashboard completo vem na Parte 5.</p>
-          <p style="margin-top:6px;color:#aaa;font-size:.8rem">Use o menu <b>Administração</b> para cadastrar obras e usuários.</p>
+          <p style="margin-top:6px;color:#aaa;font-size:.8rem">Use <b>Administração</b> para cadastrar obras e usuários.</p>
         </div>
       </div>
     </div>
@@ -276,10 +230,9 @@
       <div class="card"><div class="empty"><div class="empty-icon">📋</div><p>Relatórios — Parte 6.</p></div></div>
     </div>
 
-    <!-- ══ ADMIN ══ -->
+    <!-- ADMIN -->
     <div class="tab-panel" id="tab-admin">
       <div class="page-header"><h1>Administração</h1><p>Gerencie obras e usuários do sistema.</p></div>
-
       <div class="admin-tabs">
         <button class="admin-tab-btn active" onclick="App.adminTab('obras')">🏗️ Obras</button>
         <button class="admin-tab-btn" onclick="App.adminTab('usuarios')">👥 Usuários</button>
@@ -288,36 +241,29 @@
       <!-- OBRAS -->
       <div class="admin-panel active" id="adm-obras">
         <div class="card">
-          <div class="card-header">
-            <div><h3>Cadastrar Obra</h3><p>Adicione uma nova obra ao sistema.</p></div>
-          </div>
+          <div class="card-header"><div><h3>Cadastrar Obra</h3><p>Adicione uma nova obra ao sistema.</p></div></div>
           <label>Nome da Obra</label>
           <input id="obraName" type="text" placeholder="Ex: Residencial Parque Verde">
           <label>Descrição (opcional)</label>
           <input id="obraDesc" type="text" placeholder="Ex: Bloco A — 12 apartamentos">
-          <div class="row" style="margin-top:16px">
+          <div style="margin-top:16px">
             <button class="btn btn-primary full" id="btnSaveObra" onclick="App.saveObra()">💾 Salvar Obra</button>
           </div>
           <div class="msg" id="obraMsg"></div>
         </div>
-
         <div class="card">
           <div class="card-header">
             <div><h3>Obras Cadastradas</h3></div>
             <button class="btn btn-outline sm" onclick="App.loadObras()">🔄 Atualizar</button>
           </div>
-          <div id="obraList">
-            <div class="empty"><div class="empty-icon">🏗️</div><p>Nenhuma obra cadastrada ainda.</p></div>
-          </div>
+          <div id="obraList"><div class="empty"><div class="empty-icon">🏗️</div><p>Nenhuma obra cadastrada ainda.</p></div></div>
         </div>
       </div>
 
       <!-- USUÁRIOS -->
       <div class="admin-panel" id="adm-usuarios">
         <div class="card">
-          <div class="card-header">
-            <div><h3>Cadastrar Usuário</h3><p>Crie um novo acesso ao sistema.</p></div>
-          </div>
+          <div class="card-header"><div><h3>Cadastrar Usuário</h3><p>Crie um novo acesso ao sistema.</p></div></div>
           <label>Nome completo</label>
           <input id="userNome" type="text" placeholder="Ex: João da Silva">
           <label>E-mail</label>
@@ -337,33 +283,27 @@
           </div>
           <div class="msg" id="userMsg"></div>
         </div>
-
         <div class="card">
           <div class="card-header">
             <div><h3>Usuários Cadastrados</h3></div>
             <button class="btn btn-outline sm" onclick="App.loadUsers()">🔄 Atualizar</button>
           </div>
-          <div id="userList">
-            <div class="empty"><div class="empty-icon">👥</div><p>Nenhum usuário cadastrado ainda.</p></div>
-          </div>
+          <div id="userList"><div class="empty"><div class="empty-icon">👥</div><p>Nenhum usuário cadastrado ainda.</p></div></div>
         </div>
       </div>
 
-    </div><!-- /tab-admin -->
-
+    </div>
   </main>
 
-  <!-- BOTTOM NAV -->
   <nav class="bottom-nav" id="bottomNav">
     <button class="nav-item active" onclick="App.goTab('dashboard')" data-tab="dashboard"><span class="nav-icon">📊</span><span>Dashboard</span></button>
     <button class="nav-item" onclick="App.goTab('lancamentos')" data-tab="lancamentos"><span class="nav-icon">➕</span><span>Lançar</span></button>
     <button class="nav-item" onclick="App.goTab('relatorios')" data-tab="relatorios"><span class="nav-icon">📋</span><span>Relatórios</span></button>
     <button class="nav-item hidden" id="bottomAdmin" onclick="App.goTab('admin')" data-tab="admin"><span class="nav-icon">⚙️</span><span>Admin</span></button>
   </nav>
-
 </div>
 
-<!-- MODAL CONFIRMAÇÃO -->
+<!-- MODAL -->
 <div class="modal-overlay hidden" id="modalConfirm">
   <div class="modal">
     <h3 id="modalTitle">Confirmar ação</h3>
@@ -375,7 +315,6 @@
   </div>
 </div>
 
-<!-- ══ FIREBASE ══ -->
 <script type="module">
   import { initializeApp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -393,13 +332,17 @@
     appId:             "1:762360030642:web:c041f5526c1a274ed0b0ab"
   };
 
-  const firebase = initializeApp(firebaseConfig);
-  const auth     = getAuth(firebase);
-  const db       = getFirestore(firebase);
+  // App principal (sessão do admin)
+  const firebaseMain    = initializeApp(firebaseConfig, "main");
+  // App secundário (só para criar usuários sem afetar sessão)
+  const firebaseHelper  = initializeApp(firebaseConfig, "helper");
+
+  const auth    = getAuth(firebaseMain);
+  const authAux = getAuth(firebaseHelper);
+  const db      = getFirestore(firebaseMain);
 
   enableIndexedDbPersistence(db).catch(() => {});
 
-  // ── helpers ──
   const $   = id => document.getElementById(id);
   const brl = n  => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
@@ -426,7 +369,6 @@
     upd();
   }
 
-  // ── nav ──
   function goTab(tab) {
     document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".nav-item[data-tab]").forEach(b=>b.classList.remove("active"));
@@ -439,9 +381,10 @@
     document.querySelectorAll(".admin-panel").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".admin-tab-btn").forEach(b=>b.classList.remove("active"));
     $(`adm-${tab}`)?.classList.add("active");
-    document.querySelectorAll(".admin-tab-btn").forEach(b=>{
-      if(b.textContent.toLowerCase().includes(tab==="obras"?"obra":"usu")) b.classList.add("active");
-    });
+    // ativa botão correto
+    const btns = document.querySelectorAll(".admin-tab-btn");
+    if(tab==="obras")    btns[0].classList.add("active");
+    if(tab==="usuarios") btns[1].classList.add("active");
     if(tab==="obras")    loadObras();
     if(tab==="usuarios") loadUsers();
   }
@@ -450,18 +393,15 @@
     const el=$(id); if(el) el.type=el.type==="password"?"text":"password";
   }
 
-  // ── modal ──
-  let modalCallback = null;
   function showModal(title, text, cb) {
     $("modalTitle").textContent=title;
     $("modalText").textContent=text;
-    modalCallback=cb;
     $("modalConfirm").classList.remove("hidden");
     $("modalConfirmBtn").onclick=()=>{ closeModal(); cb(); };
   }
   function closeModal() { $("modalConfirm").classList.add("hidden"); }
 
-  // ── login ──
+  // ── LOGIN ──
   async function login() {
     setMsg("loginMsg","");
     const email=$("loginEmail").value.trim();
@@ -474,19 +414,17 @@
       await signInWithEmailAndPassword(auth,email,password);
     } catch(e) {
       const msgs={"auth/user-not-found":"Usuário não encontrado.","auth/wrong-password":"Senha incorreta.","auth/invalid-email":"E-mail inválido.","auth/too-many-requests":"Muitas tentativas. Aguarde.","auth/invalid-credential":"E-mail ou senha incorretos."};
-      setMsg("loginMsg",msgs[e.code]||"Erro ao entrar: "+e.message);
+      setMsg("loginMsg",msgs[e.code]||"Erro: "+e.message);
     } finally { btn.disabled=false; btn.textContent="Entrar"; }
   }
 
   async function logout() { await signOut(auth); }
 
-  // ── perfil ──
   async function loadProfile(uid) {
     try { const s=await getDoc(doc(db,"usuarios",uid)); if(s.exists()) return s.data(); } catch(_){}
     return null;
   }
 
-  // ── init app ──
   let currentUser = null;
   let currentRole = "USER";
 
@@ -509,8 +447,7 @@
 
     try {
       const snap=await getDocs(collection(db,"obras"));
-      const ativas=snap.docs.filter(d=>d.data().ativa!==false).length;
-      $("statObras").textContent=ativas||"0";
+      $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length||"0";
     } catch(_){}
 
     $("loginPage").classList.add("hidden");
@@ -520,28 +457,24 @@
     goTab("dashboard");
   }
 
-  // ══════════════════════════════
-  // OBRAS
-  // ══════════════════════════════
+  // ── OBRAS ──
   async function saveObra() {
     setMsg("obraMsg","");
-    const nome = $("obraName").value.trim();
-    const desc = $("obraDesc").value.trim();
-    const btn  = $("btnSaveObra");
+    const nome=$("obraName").value.trim();
+    const desc=$("obraDesc").value.trim();
+    const btn=$("btnSaveObra");
     if(!nome){setMsg("obraMsg","Informe o nome da obra.");return;}
     btn.disabled=true; btn.textContent="Salvando...";
     try {
-      const id = "OBRA_" + Date.now();
+      const id="OBRA_"+Date.now();
       await setDoc(doc(db,"obras",id),{
         id, nome, descricao:desc, ativa:true,
-        criadoPor: currentUser.uid,
-        criadoEm:  serverTimestamp()
+        criadoPor:currentUser.uid, criadoEm:serverTimestamp()
       });
       $("obraName").value=""; $("obraDesc").value="";
-      setMsg("obraMsg","✅ Obra cadastrada com sucesso!",true);
+      setMsg("obraMsg","✅ Obra cadastrada!",true);
       toast("Obra cadastrada! 🏗️");
       await loadObras();
-      // atualiza stat
       const snap=await getDocs(collection(db,"obras"));
       $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length;
     } catch(e){ setMsg("obraMsg","Erro: "+e.message); }
@@ -553,10 +486,7 @@
     el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>`;
     try {
       const snap=await getDocs(query(collection(db,"obras"),orderBy("criadoEm","desc")));
-      if(snap.empty){
-        el.innerHTML=`<div class="empty"><div class="empty-icon">🏗️</div><p>Nenhuma obra cadastrada ainda.</p></div>`;
-        return;
-      }
+      if(snap.empty){el.innerHTML=`<div class="empty"><div class="empty-icon">🏗️</div><p>Nenhuma obra cadastrada ainda.</p></div>`;return;}
       el.innerHTML="";
       snap.forEach(d=>{
         const o=d.data();
@@ -580,7 +510,7 @@
   async function toggleObra(id, ativa) {
     try {
       await updateDoc(doc(db,"obras",id),{ativa:!ativa});
-      toast(ativa?"Obra desativada.":"Obra ativada! ✅", !ativa);
+      toast(ativa?"Obra desativada.":"Obra ativada! ✅",!ativa);
       await loadObras();
       const snap=await getDocs(collection(db,"obras"));
       $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length;
@@ -589,17 +519,13 @@
 
   async function deleteObra(id, nome) {
     showModal("Excluir obra","Tem certeza que deseja excluir \""+nome+"\"? Esta ação não pode ser desfeita.",async()=>{
-      try {
-        await deleteDoc(doc(db,"obras",id));
-        toast("Obra excluída.");
-        await loadObras();
-      } catch(e){ toast("Erro: "+e.message,false); }
+      try { await deleteDoc(doc(db,"obras",id)); toast("Obra excluída."); await loadObras(); }
+      catch(e){ toast("Erro: "+e.message,false); }
     });
   }
 
-  // ══════════════════════════════
-  // USUÁRIOS
-  // ══════════════════════════════
+  // ── USUÁRIOS ──
+  // ✅ CORREÇÃO: usa authAux (app secundário) para não deslogar o admin
   async function saveUser() {
     setMsg("userMsg","");
     const nome  = $("userNome").value.trim();
@@ -607,31 +533,27 @@
     const senha = $("userSenha").value;
     const role  = $("userRole").value;
     const btn   = $("btnSaveUser");
-
-    if(!nome)            {setMsg("userMsg","Informe o nome.");return;}
-    if(!email)           {setMsg("userMsg","Informe o e-mail.");return;}
-    if(senha.length < 6) {setMsg("userMsg","A senha deve ter pelo menos 6 caracteres.");return;}
-
+    if(!nome)           {setMsg("userMsg","Informe o nome.");return;}
+    if(!email)          {setMsg("userMsg","Informe o e-mail.");return;}
+    if(senha.length<6)  {setMsg("userMsg","A senha deve ter pelo menos 6 caracteres.");return;}
     btn.disabled=true; btn.textContent="Criando...";
     try {
-      // cria no Firebase Auth
-      const cred = await createUserWithEmailAndPassword(auth, email, senha);
-      // salva perfil no Firestore
+      // ✅ Cria usuário no app auxiliar — não afeta sessão do admin!
+      const cred = await createUserWithEmailAndPassword(authAux, email, senha);
+      // Desconecta o app auxiliar imediatamente
+      await signOut(authAux);
+      // Salva perfil no Firestore
       await setDoc(doc(db,"usuarios",cred.user.uid),{
-        uid: cred.user.uid, nome, email, role, ativo:true,
-        criadoPor: currentUser.uid,
-        criadoEm:  serverTimestamp()
+        uid:cred.user.uid, nome, email, role, ativo:true,
+        criadoPor:currentUser.uid, criadoEm:serverTimestamp()
       });
-      // re-loga o admin (createUser faz login automático no novo usuário)
-      await signInWithEmailAndPassword(auth, currentUser.email, "");
-
       $("userNome").value=""; $("userEmail").value=""; $("userSenha").value="";
       setMsg("userMsg","✅ Usuário criado com sucesso!",true);
       toast("Usuário criado! 👤");
       await loadUsers();
     } catch(e) {
-      const msgs={"auth/email-already-in-use":"Este e-mail já está cadastrado.","auth/invalid-email":"E-mail inválido.","auth/weak-password":"Senha muito fraca (mín. 6 caracteres)."};
-      setMsg("userMsg", msgs[e.code]||"Erro: "+e.message);
+      const msgs={"auth/email-already-in-use":"Este e-mail já está cadastrado.","auth/invalid-email":"E-mail inválido.","auth/weak-password":"Senha fraca (mín. 6 caracteres)."};
+      setMsg("userMsg",msgs[e.code]||"Erro: "+e.message);
     } finally { btn.disabled=false; btn.textContent="💾 Criar Usuário"; }
   }
 
@@ -640,10 +562,7 @@
     el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>`;
     try {
       const snap=await getDocs(query(collection(db,"usuarios"),orderBy("criadoEm","desc")));
-      if(snap.empty){
-        el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p>Nenhum usuário cadastrado ainda.</p></div>`;
-        return;
-      }
+      if(snap.empty){el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><p>Nenhum usuário cadastrado ainda.</p></div>`;return;}
       el.innerHTML="";
       snap.forEach(d=>{
         const u=d.data();
@@ -664,16 +583,13 @@
   }
 
   async function deleteUser(id, nome) {
-    showModal("Remover usuário","Tem certeza que deseja remover \""+nome+"\" do sistema?",async()=>{
-      try {
-        await deleteDoc(doc(db,"usuarios",id));
-        toast("Usuário removido.");
-        await loadUsers();
-      } catch(e){ toast("Erro: "+e.message,false); }
+    showModal("Remover usuário","Tem certeza que deseja remover \""+nome+"\"?",async()=>{
+      try { await deleteDoc(doc(db,"usuarios",id)); toast("Usuário removido."); await loadUsers(); }
+      catch(e){ toast("Erro: "+e.message,false); }
     });
   }
 
-  // ── auth state ──
+  // ── AUTH STATE ──
   onAuthStateChanged(auth, async (user) => {
     $("loadingScreen").style.display="none";
     if(user) {
