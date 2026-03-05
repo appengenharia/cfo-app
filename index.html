@@ -324,7 +324,7 @@
           <div class="upload-icon">📎</div>
           <div class="upload-text">Clique para anexar foto do comprovante</div>
           <div class="upload-sub">Máx. 10MB — JPG ou PNG</div>
-          <input type="file" id="lancFile" accept="image/*" style="display:none" onchange="App.onFileSelect()">
+          <input type="file" id="lancFile" accept="image/*" capture="environment" style="display:none" onchange="App.onFileSelect()">
         </div>
         <div id="filePreview" class="hidden"></div>
         <div style="display:flex;gap:10px;margin-top:20px">
