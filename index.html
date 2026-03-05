@@ -148,6 +148,16 @@
     .toast.err{background:var(--danger);}
     @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
     @media(min-width:768px){.toast{bottom:24px;}}
+    /* TABELA DASHBOARD */
+    .dash-table{width:100%;border-collapse:collapse;}
+    .dash-table th{text-align:left;font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:2px solid var(--border);}
+    .dash-table th:last-child{text-align:right;}
+    .dash-table td{padding:10px 12px;font-size:.88rem;border-bottom:1px solid var(--border);color:var(--text);}
+    .dash-table td:last-child{text-align:right;font-weight:600;font-family:'Syne',sans-serif;}
+    .dash-table tr:last-child td{border-bottom:none;}
+    .dash-table .total-row td{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:var(--accent);background:#fff8f9;border-top:2px solid var(--border);}
+    .dash-table tr:hover:not(.total-row) td{background:#f8f9fc;}
+    .cat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;}
     /* UPLOAD */
     .upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .18s;background:#fafafa;margin-top:4px;}
     .upload-area:hover{border-color:var(--brand);background:#f0f7ff;}
@@ -267,16 +277,44 @@
         <div class="badge" id="welcomeRole">-</div>
       </div>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Total do Mês</div><div class="stat-value" id="statTotal">R$ 0,00</div></div>
+        <div class="stat-card"><div class="stat-label">Total Filtrado</div><div class="stat-value" id="statTotal">R$ 0,00</div></div>
         <div class="stat-card c-accent"><div class="stat-label">Lançamentos</div><div class="stat-value" id="statCount">0</div></div>
         <div class="stat-card c-success"><div class="stat-label">Obras Ativas</div><div class="stat-value" id="statObras">0</div></div>
         <div class="stat-card c-warning"><div class="stat-label">Pendentes Sync</div><div class="stat-value" id="statPending">0</div></div>
       </div>
+
+      <!-- FILTROS -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:140px">
+            <label style="margin-top:0">Obra</label>
+            <select id="dashObra" onchange="App.onDashObraChange()">
+              <option value="">Todas as obras</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:140px" id="dashColabWrap">
+            <label style="margin-top:0">Colaborador</label>
+            <select id="dashColab" onchange="App.loadDashboard()">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="margin-top:0">De</label>
+            <input type="date" id="dashDe" onchange="App.loadDashboard()">
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="margin-top:0">Até</label>
+            <input type="date" id="dashAte" onchange="App.loadDashboard()">
+          </div>
+          <button class="btn btn-outline sm" onclick="App.clearDashFilters()" style="margin-bottom:2px">🔄 Limpar</button>
+        </div>
+      </div>
+
+      <!-- TABELA POR CATEGORIA -->
       <div class="card">
-        <div class="empty">
-          <div class="empty-icon">🚧</div>
-          <p>Dashboard completo vem na Parte 5.</p>
-          <p style="margin-top:6px;color:#aaa;font-size:.8rem">Use <b>Administração</b> para cadastrar obras e colaboradores.</p>
+        <div class="card-header"><div><h3>Monitoramento por Categoria</h3></div></div>
+        <div id="dashTable">
+          <div class="empty"><div class="empty-icon">📊</div><p>Nenhum lançamento encontrado.</p></div>
         </div>
       </div>
     </div>
@@ -512,8 +550,9 @@
     document.querySelectorAll(".nav-item[data-tab]").forEach(b=>b.classList.remove("active"));
     $(`tab-${tab}`)?.classList.add("active");
     document.querySelectorAll(`[data-tab="${tab}"]`).forEach(b=>b.classList.add("active"));
-    if(tab==="admin")     { loadObras(); fillObraSelect(); }
-    if(tab==="lancamentos"){ fillLancObras(); loadLancs(); setTodayDate(); }
+    if(tab==="admin")      { loadObras(); fillObraSelect(); }
+    if(tab==="lancamentos") { fillLancObras(); loadLancs(); setTodayDate(); }
+    if(tab==="dashboard")   { fillDashFilters().then(()=>loadDashboard()); }
   }
 
   function adminTab(tab) {
@@ -629,10 +668,10 @@
     } catch(_){}
 
     showPage("appLayout");
+    await fillDashFilters();
+    loadDashboard();
     goTab("dashboard");
-    updateStatTotal();
     updatePendingCount();
-    // Tenta sincronizar pendentes ao abrir o app
     setTimeout(syncPendingLancs, 2000);
   }
 
@@ -1252,6 +1291,157 @@
     setTimeout(syncPendingLancs, 1500);
   });
 
+
+  // ══════════════════════════════
+  // DASHBOARD
+  // ══════════════════════════════
+  const CATEGORIAS_CORES = {
+    "Hospedagem":              "#6366f1",
+    "Combustível":             "#f59e0b",
+    "Locação de automóvel":    "#10b981",
+    "Alimentação":             "#ef4444",
+    "Passagem de avião":       "#3b82f6",
+    "Ferramentas":             "#8b5cf6",
+    "Materiais de construção": "#f97316",
+    "Outros gastos":           "#6b7280"
+  };
+
+  async function fillDashFilters() {
+    const selObra  = $("dashObra");
+    const selColab = $("dashColab");
+    if(!selObra) return;
+    try {
+      // Obras — admin vê todas, colaborador só a sua
+      const obrasSnap = await getDocs(collection(db,"obras"));
+      selObra.innerHTML = `<option value="">Todas as obras</option>`;
+      obrasSnap.forEach(d => {
+        if(d.data().ativa === false) return;
+        if(currentRole !== "ADMIN") return; // colaborador não escolhe obra
+        const o = document.createElement("option");
+        o.value = d.id; o.textContent = d.data().nome;
+        selObra.appendChild(o);
+      });
+
+      // Colaborador: pré-seleciona sua obra e esconde filtro de colab
+      if(currentRole !== "ADMIN") {
+        const prof = await loadProfile(currentUser.uid);
+        if(prof?.obra_id) selObra.value = prof.obra_id;
+        selObra.disabled = true;
+        $("dashColabWrap").style.display = "none";
+      } else {
+        selObra.disabled = false;
+        $("dashColabWrap").style.display = "";
+        // Preenche colaboradores
+        const usersSnap = await getDocs(collection(db,"usuarios"));
+        selColab.innerHTML = `<option value="">Todos</option>`;
+        usersSnap.forEach(d => {
+          if(d.data().ativo === false) return;
+          const o = document.createElement("option");
+          o.value = d.data().uid; o.textContent = d.data().nome || d.data().email;
+          selColab.appendChild(o);
+        });
+      }
+    } catch(_){}
+  }
+
+  // Quando troca obra, filtra colaboradores daquela obra
+  async function onDashObraChange() {
+    const obraId   = $("dashObra").value;
+    const selColab = $("dashColab");
+    if(!selColab || currentRole !== "ADMIN") { loadDashboard(); return; }
+    try {
+      const usersSnap = await getDocs(collection(db,"usuarios"));
+      selColab.innerHTML = `<option value="">Todos</option>`;
+      usersSnap.forEach(d => {
+        const u = d.data();
+        if(u.ativo === false) return;
+        if(obraId && u.obra_id !== obraId) return; // filtra por obra
+        const o = document.createElement("option");
+        o.value = u.uid; o.textContent = u.nome || u.email;
+        selColab.appendChild(o);
+      });
+    } catch(_){}
+    loadDashboard();
+  }
+
+  async function loadDashboard() {
+    const el = $("dashTable");
+    if(!el) return;
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">Carregando...</div>`;
+
+    const obraFilt  = $("dashObra")?.value  || "";
+    const colabFilt = $("dashColab")?.value || "";
+    const deFilt    = $("dashDe")?.value    || "";
+    const ateFilt   = $("dashAte")?.value   || "";
+
+    try {
+      let snap = await getDocs(query(collection(db,"lancamentos"), orderBy("criadoEm","desc")));
+      let lancs = snap.docs.map(d => d.data());
+
+      // Colaborador só vê sua obra
+      if(currentRole !== "ADMIN") {
+        const prof = await loadProfile(currentUser.uid);
+        if(prof?.obra_id) lancs = lancs.filter(l => l.obra_id === prof.obra_id);
+        lancs = lancs.filter(l => l.colaborador_uid === currentUser.uid || true); // vê todos da obra
+      } else {
+        if(obraFilt)  lancs = lancs.filter(l => l.obra_id === obraFilt);
+        if(colabFilt) lancs = lancs.filter(l => l.colaborador_uid === colabFilt);
+      }
+      if(deFilt)  lancs = lancs.filter(l => l.data >= deFilt);
+      if(ateFilt) lancs = lancs.filter(l => l.data <= ateFilt);
+
+      // Agrupa por categoria
+      const totais = {};
+      const cats   = Object.keys(CATEGORIAS_CORES);
+      cats.forEach(c => totais[c] = 0);
+      let totalGeral = 0;
+      lancs.forEach(l => {
+        const cat = l.categoria || "Outros gastos";
+        if(totais[cat] !== undefined) totais[cat] += Number(l.valor||0);
+        else totais["Outros gastos"] += Number(l.valor||0);
+        totalGeral += Number(l.valor||0);
+      });
+
+      // Atualiza stats
+      $("statTotal").textContent = totalGeral.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+      $("statCount").textContent = lancs.length;
+
+      // Monta tabela
+      const brl = n => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+      let rows = "";
+      cats.forEach(cat => {
+        const cor = CATEGORIAS_CORES[cat];
+        rows += `<tr>
+          <td><span class="cat-dot" style="background:${cor}"></span>${cat}</td>
+          <td>${brl(totais[cat])}</td>
+        </tr>`;
+      });
+
+      el.innerHTML = `
+        <table class="dash-table">
+          <thead><tr><th>Categoria</th><th>Total Acumulado</th></tr></thead>
+          <tbody>
+            ${rows}
+            <tr class="total-row">
+              <td>TOTAL GERAL</td>
+              <td>${brl(totalGeral)}</td>
+            </tr>
+          </tbody>
+        </table>`;
+
+    } catch(e){ el.innerHTML=`<p style="color:var(--danger);padding:12px">Erro ao carregar.</p>`; }
+  }
+
+  function clearDashFilters() {
+    const selObra  = $("dashObra");
+    const selColab = $("dashColab");
+    if(selObra && currentRole === "ADMIN")  selObra.value  = "";
+    if(selColab) selColab.value = "";
+    if($("dashDe"))  $("dashDe").value  = "";
+    if($("dashAte")) $("dashAte").value = "";
+    loadDashboard();
+  }
+
   window.App = {
     login, logout, togglePass, goTab, adminTab,
     changePassword,
@@ -1260,6 +1450,7 @@
     toggleReemb, onFileSelect, removeFile,
     saveLanc, cancelLanc, editLanc, deleteLanc, loadLancs,
     syncPendingLancs,
+    loadDashboard, onDashObraChange, clearDashFilters,
     closeModal
   };
 </script>
