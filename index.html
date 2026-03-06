@@ -1833,8 +1833,12 @@ CFO — Controle Financeiro de Obras`;
       emailjs.init(EMAILJS_KEY);
       let enviados=0;
       for(const email of emails){
-        // Período sem barras para o subject do email
-        const periodoSubject = (deFmt+" a "+ateFmt).replace(/\//g,"-");
+        // Período no formato Mês/Ano para o subject
+        const deDate  = $("relDe")?.value  ? new Date($("relDe").value+"T12:00:00")  : new Date();
+        const ateDate = $("relAte")?.value ? new Date($("relAte").value+"T12:00:00") : new Date();
+        const meses   = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+        const periodoSubject = meses[deDate.getMonth()]+"-"+deDate.getFullYear()
+          + (deDate.getMonth()!==ateDate.getMonth() ? " a "+meses[ateDate.getMonth()]+"-"+ateDate.getFullYear() : "");
         await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
           to_email: email,
           obra_nome: obraNome,
