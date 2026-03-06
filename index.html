@@ -738,8 +738,7 @@
           <div class="list-item-name">${u.nome||"—"}</div>
           <div class="list-item-sub">${u.email}</div>
           <div class="list-item-sub" style="margin-top:3px">${(u.obras&&u.obras.length?u.obras.map(id=>obrasMapRender[id]||id).filter(Boolean).map(n=>"🏗️ "+n).join(" · "):"Sem alocação")}</div>
-        </div>
-        ${badges}
+        </div>${badges}
         <div class="list-item-actions">
           <button class="btn btn-outline sm" data-uid="${u.id}" data-nome="${u.nome||u.email}" onclick="App.openAlocModal(this.dataset.uid, this.dataset.nome)">🏗️ Alocar</button>
           ${acaoBtn}
@@ -1601,7 +1600,7 @@
         // Título do colaborador
         doc.setFontSize(10); doc.setFont("helvetica","bold");
         doc.setTextColor(15,52,96);
-        doc.text("👤 " + colaborador, 14, startY);
+        doc.text("Colaborador: " + colaborador, 14, startY);
         startY += 5;
 
         const rows = lancColab.map(l => [
