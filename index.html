@@ -9887,12 +9887,15 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   async function _vMarcarLidas() {
     if(!_chatObraId || !currentUser) return;
     try {
+      // Busca simples sem índice composto — filtra no JS
       const snap = await getDocs(query(
         collection(db,"obras",_chatObraId,"mensagens"),
-        where("lida","==",false),
-        where("deRole","!=","VISITANTE")
+        where("lida","==",false)
       ));
-      snap.forEach(async d=> await updateDoc(doc(db,"obras",_chatObraId,"mensagens",d.id),{lida:true}));
+      snap.forEach(async d=>{
+        if(d.data().deRole !== "VISITANTE")
+          await updateDoc(doc(db,"obras",_chatObraId,"mensagens",d.id),{lida:true});
+      });
     } catch(_) {}
   }
 
@@ -9900,17 +9903,15 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     if(!_vObraId || !currentUser) return;
     try {
       const { onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
+      // Query simples sem índice composto — filtra deRole no JS
       const q = query(
         collection(db,"obras",_vObraId,"mensagens"),
-        where("lida","==",false),
-        where("deRole","!=","VISITANTE"),
-        orderBy("criadoEm","desc"),
-        limit(5)
+        where("lida","==",false)
       );
       onSnapshot(q, snap=>{
         const badge = document.getElementById("vChatBadge");
         if(badge){
-          const n = snap.size;
+          const n = snap.docs.filter(d=>d.data().deRole !== "VISITANTE").length;
           badge.textContent = n;
           badge.style.display = n>0 ? "flex" : "none";
         }
@@ -10010,10 +10011,12 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     try {
       const snap = await getDocs(query(
         collection(db,"obras",_chatAdmObraId,"mensagens"),
-        where("lida","==",false),
-        where("deRole","==","VISITANTE")
+        where("lida","==",false)
       ));
-      snap.forEach(async d=> await updateDoc(doc(db,"obras",_chatAdmObraId,"mensagens",d.id),{lida:true}));
+      snap.forEach(async d=>{
+        if(d.data().deRole === "VISITANTE")
+          await updateDoc(doc(db,"obras",_chatAdmObraId,"mensagens",d.id),{lida:true});
+      });
     } catch(_) {}
   }
 
@@ -10031,16 +10034,17 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
       // Monitorar cada obra
       obrasIds.forEach(obraId=>{
+        // Query simples — sem índice composto
         const q = query(
           collection(db,"obras",obraId,"mensagens"),
-          where("lida","==",false),
-          where("deRole","==","VISITANTE"),
-          orderBy("criadoEm","desc"),
-          limit(1)
+          where("lida","==",false)
         );
         onSnapshot(q, snap=>{
-          if(!snap.empty){
-            const msg = snap.docs[0].data();
+          const visitanteMsgs = snap.docs
+            .filter(d=>d.data().deRole==="VISITANTE")
+            .sort((a,b)=>(b.data().criadoEm?.seconds||0)-(a.data().criadoEm?.seconds||0));
+          if(visitanteMsgs.length>0){
+            const msg = visitanteMsgs[0].data();
             // Atualizar badge no botão Chat do menu (se existir)
             const chatNavBtn = document.getElementById("btnChatNav");
             if(chatNavBtn) chatNavBtn.style.display="";
