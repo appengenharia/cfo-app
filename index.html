@@ -5524,6 +5524,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
   let pontoProfile   = null;
   let livenessOk     = false;
   let facialOk       = false;
+  let _evolAtividades = [];
+  let _evolRegFotoB64 = null;
   let livenessDetector = null;
   let blinkCount     = 0;
   let eyeWasClosed   = false;
@@ -5539,21 +5541,26 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
   }
 
   function irParaPonto() {
-    pontoUser=null; pontoStream=null; pontoFotoB64=null; pontoGPS=null;
-    pontoFaseAtual=null; pontoObraData=null; justPontoId=null;
-    pontoProfile=null; livenessOk=false; facialOk=false; blinkCount=0; eyeWasClosed=false;
-    window._geoBlocked = false;
-    if(livenessDetector){ clearInterval(livenessDetector); livenessDetector=null; }
-    $("pontoEmail").value=""; $("pontoSenha").value="";
-    setMsg("pontoLoginMsg","");
-    $("pontoGeoAviso")?.classList.add("hidden");
-    $("pontoStepEvolucao")?.classList.add("hidden");
-    _evolAtividades = []; _evolRegFotoB64 = null;
-    $("pontoSemFotoAviso")?.classList.add("hidden");
-    $("pontoStepLogin").classList.remove("hidden");
-    $("pontoStepCamera").classList.add("hidden");
-    $("pontoStepOk").classList.add("hidden");
-    $("pontoStepJustificativa").classList.add("hidden");
+    try {
+      pontoUser=null; pontoStream=null; pontoFotoB64=null; pontoGPS=null;
+      pontoFaseAtual=null; pontoObraData=null; justPontoId=null;
+      pontoProfile=null; livenessOk=false; facialOk=false; blinkCount=0; eyeWasClosed=false;
+      window._geoBlocked = false;
+      if(livenessDetector){ clearInterval(livenessDetector); livenessDetector=null; }
+      const pontoEmailEl = $("pontoEmail");
+      const pontoSenhaEl = $("pontoSenha");
+      if(pontoEmailEl) pontoEmailEl.value="";
+      if(pontoSenhaEl) pontoSenhaEl.value="";
+      setMsg("pontoLoginMsg","");
+      $("pontoGeoAviso")?.classList.add("hidden");
+      $("pontoStepEvolucao")?.classList.add("hidden");
+      _evolAtividades = []; _evolRegFotoB64 = null;
+      $("pontoSemFotoAviso")?.classList.add("hidden");
+      $("pontoStepLogin")?.classList.remove("hidden");
+      $("pontoStepCamera")?.classList.add("hidden");
+      $("pontoStepOk")?.classList.add("hidden");
+      $("pontoStepJustificativa")?.classList.add("hidden");
+    } catch(e) { console.warn("irParaPonto reset:", e); }
     showPage("pontoPage");
   }
 
