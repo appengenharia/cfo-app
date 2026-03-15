@@ -9872,22 +9872,33 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
   function vAbrirChat() {
-    const modal = _getChatModal();
-    modal.style.display = "flex";
-    _chatObraId = _vObraId;
-    _vCarregarChat();
-    _vMarcarLidas();
+    // Usar o painel interno da visitantePage
+    const panel = document.getElementById("vChatPanel");
+    if(panel) {
+      panel.style.display = "block";
+      _chatObraId = _vObraId;
+      // Usar vChatMsgs2 como container de mensagens
+      _vCarregarChat("vChatMsgs2");
+      _vMarcarLidas();
+      // Listener do botão fechar
+      const btnF = document.getElementById("vChatFecharBtn2");
+      if(btnF) btnF.onclick = ()=> vFecharChat();
+      // Focar no input
+      setTimeout(()=>{ document.getElementById("vChatInput2")?.focus(); }, 200);
+    }
   }
 
   function vFecharChat() {
+    const panel = document.getElementById("vChatPanel");
+    if(panel) panel.style.display = "none";
     const modal = document.getElementById("vModalChat");
     if(modal) modal.style.display = "none";
     if(_chatUnsubscribe){ _chatUnsubscribe(); _chatUnsubscribe=null; }
   }
 
-  async function _vCarregarChat() {
+  async function _vCarregarChat(containerId) {
     if(!_chatObraId) return;
-    const container = document.getElementById("vChatMsgs");
+    const container = document.getElementById(containerId||"vChatMsgs2");
     if(!container) return;
     container.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,.3);font-size:.75rem;padding:16px">Carregando...</div>`;
     try {
@@ -9912,7 +9923,8 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
   async function vEnviarMsg() {
     window._vEnviarMsg = vEnviarMsg;
-    const input = document.getElementById("vChatInput");
+    // Usar input do painel ativo
+    const input = document.getElementById("vChatInput2") || document.getElementById("vChatInput");
     const texto = input?.value?.trim();
     if(!texto || !_chatObraId) return;
     if(texto.length > 300) { return; }
@@ -9927,7 +9939,8 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         criadoEm: serverTimestamp()
       });
       input.value = "";
-      document.getElementById("vChatCounter").textContent = "0/300";
+      const counter = document.getElementById("vChatCounter2") || document.getElementById("vChatCounter");
+      if(counter) counter.textContent = "0/300";
     } catch(e) { console.error(e); }
     finally { input.disabled = false; input.focus(); }
   }
@@ -10202,7 +10215,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   <!-- ══════════════════════════════════════════════════════════
        PÁGINA DO VISITANTE — somente leitura, fullscreen
        ══════════════════════════════════════════════════════════ -->
-  <div class="auth-page hidden" id="visitantePage" style="background:var(--brand2);min-height:100vh;padding:0;display:flex;flex-direction:column">
+  <div class="auth-page hidden" id="visitantePage" style="background:var(--brand2);min-height:100vh;padding:0;display:flex;flex-direction:column;overflow:visible;position:relative">
 
     <!-- Topbar -->
     <div style="background:var(--brand);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.3)">
@@ -10357,6 +10370,41 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         }
       </style>
     </div><!-- /scroll -->
+
+    <!-- Chat panel — posicionado no bottom da visitantePage -->
+    <div id="vChatPanel" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:9999;padding:0 12px 12px;pointer-events:none">
+      <div style="width:100%;max-width:420px;margin:0 auto;background:#1a2744;border-radius:18px 18px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:75vh;border:1px solid rgba(255,255,255,.15);border-bottom:none;pointer-events:all">
+        <!-- Header -->
+        <div style="padding:13px 16px;background:#0f3460;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;cursor:pointer" id="vChatHeader">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#e94560;display:flex;align-items:center;justify-content:center;font-size:.9rem">💬</div>
+            <div>
+              <div style="font-weight:700;color:#fff;font-size:.86rem">Chat da Obra</div>
+              <div style="font-size:.67rem;color:rgba(255,255,255,.5)">Mensagem para a equipe</div>
+            </div>
+          </div>
+          <button id="vChatFecharBtn2" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;padding:4px">✕</button>
+        </div>
+        <!-- Mensagens -->
+        <div id="vChatMsgs2" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:100px;max-height:300px">
+          <div style="text-align:center;color:rgba(255,255,255,.3);font-size:.76rem;padding:16px 0">Nenhuma mensagem ainda</div>
+        </div>
+        <!-- Input -->
+        <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0;background:#1a2744;border-radius:0 0 0 0">
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div style="flex:1;position:relative">
+              <textarea id="vChatInput2" placeholder="Mensagem (máx 300 caracteres)..." maxlength="300"
+                style="width:100%;padding:9px 11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:.82rem;resize:none;min-height:38px;max-height:90px;font-family:'DM Sans',sans-serif;box-sizing:border-box;outline:none"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();App.vEnviarMsg()}"
+                oninput="document.getElementById('vChatCounter2').textContent=this.value.length+'/300'"
+              ></textarea>
+              <span id="vChatCounter2" style="position:absolute;bottom:3px;right:7px;font-size:.6rem;color:rgba(255,255,255,.3)">0/300</span>
+            </div>
+            <button onclick="App.vEnviarMsg()" style="background:#e94560;border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:.95rem;flex-shrink:0;display:flex;align-items:center;justify-content:center">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal foto ampliada (visitante) -->
     <div class="modal-overlay hidden" id="vModalFotoAmp" onclick="App.closeModal('vModalFotoAmp')" style="align-items:center;justify-content:center;padding:16px;cursor:zoom-out">
