@@ -9827,13 +9827,55 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   // ══════════════════════════
   // LADO VISITANTE
   // ══════════════════════════
+  function _getChatModal() {
+    let modal = document.getElementById("vModalChat");
+    if(!modal) {
+      // Criar modal e appendar direto no body para evitar problemas de overflow/stacking
+      modal = document.createElement("div");
+      modal.id = "vModalChat";
+      modal.style.cssText = "display:none;position:fixed;inset:0;z-index:99999;align-items:flex-end;justify-content:flex-end;padding:16px 20px 20px;pointer-events:none";
+      modal.innerHTML = `
+        <div style="width:100%;max-width:380px;background:#1a2744;border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:70vh;border:1px solid rgba(255,255,255,.15);pointer-events:all">
+          <div style="padding:14px 18px;background:#0f3460;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:50%;background:#e94560;display:flex;align-items:center;justify-content:center;font-size:1rem">💬</div>
+              <div>
+                <div style="font-weight:700;color:#fff;font-size:.88rem">Chat da Obra</div>
+                <div style="font-size:.68rem;color:rgba(255,255,255,.5)">Mensagem para a equipe</div>
+              </div>
+            </div>
+            <button id="vChatFecharBtn" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:1.3rem;cursor:pointer;padding:4px;line-height:1">✕</button>
+          </div>
+          <div id="vChatMsgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;min-height:120px;max-height:360px">
+            <div style="text-align:center;color:rgba(255,255,255,.3);font-size:.78rem;padding:20px 0">Nenhuma mensagem ainda</div>
+          </div>
+          <div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0">
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <div style="flex:1;position:relative">
+                <textarea id="vChatInput" placeholder="Digite sua mensagem..." maxlength="300"
+                  style="width:100%;padding:10px 12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;color:#fff;font-size:.84rem;resize:none;min-height:42px;max-height:100px;font-family:'DM Sans',sans-serif;box-sizing:border-box;outline:none"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window._vEnviarMsg()}"
+                  oninput="document.getElementById('vChatCounter').textContent=this.value.length+'/300'"
+                ></textarea>
+                <span id="vChatCounter" style="position:absolute;bottom:4px;right:8px;font-size:.62rem;color:rgba(255,255,255,.3)">0/300</span>
+              </div>
+              <button onclick="window._vEnviarMsg()" style="background:#e94560;border:none;color:#fff;width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:1rem;flex-shrink:0;display:flex;align-items:center;justify-content:center">➤</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.getElementById("vChatFecharBtn").onclick = ()=> vFecharChat();
+      // Clicar fora fecha
+      modal.addEventListener("click", e=>{ if(e.target===modal) vFecharChat(); });
+    }
+    return modal;
+  }
+
   function vAbrirChat() {
-    const modal = document.getElementById("vModalChat");
-    if(!modal) return;
+    const modal = _getChatModal();
     modal.style.display = "flex";
     _chatObraId = _vObraId;
     _vCarregarChat();
-    // Marcar msgs do ADM como lidas
     _vMarcarLidas();
   }
 
@@ -9869,6 +9911,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
   async function vEnviarMsg() {
+    window._vEnviarMsg = vEnviarMsg;
     const input = document.getElementById("vChatInput");
     const texto = input?.value?.trim();
     if(!texto || !_chatObraId) return;
