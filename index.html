@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
@@ -1895,7 +1896,12 @@
     if(tab==="admin"    && currentRole!=="ADMIN") return;
     if(tab==="ponto"    && currentRole!=="ADMIN") return;
     if(tab==="rh"       && currentRole!=="ADMIN") return;
-    if(tab==="evolucao" && currentRole!=="ADMIN") return; // ADMIN vê tudo; colab só via pontoPage
+    // Evolução: ADMIN sempre, colaborador só se for responsável pela evolução
+    if(tab==="evolucao" && currentRole!=="ADMIN") {
+      // Verificar se é colaborador responsável pela evolução
+      const profEvol = allUsers?.find(u=>u.id===currentUser?.uid);
+      if(!profEvol?.evolResponsavel) return;
+    }
     document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".nav-item[data-tab]").forEach(b=>b.classList.remove("active"));
     $(`tab-${tab}`)?.classList.add("active");
@@ -5604,6 +5610,29 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
 
       await _continuarApoLogin();
     } catch(e) {
+      // Tentar com senha_temp se o login normal falhou
+      if(e.code==="auth/invalid-credential" || e.code==="auth/wrong-password") {
+        try {
+          // Busca senha_temp no Firestore pelo e-mail
+          const snap = await getDocs(query(collection(dbAux,"usuarios"),
+            where("email","==",email), limit(1)));
+          if(!snap.empty) {
+            const prof = snap.docs[0].data();
+            if(prof.senha_temp) {
+              const cred2 = await signInWithEmailAndPassword(authAux, email, prof.senha_temp);
+              pontoUser    = cred2.user;
+              pontoProfile = await loadProfileAux(pontoUser.uid);
+              if(!pontoProfile || pontoProfile.ativo===false) {
+                await signOut(authAux);
+                setMsg("pontoLoginMsg","⛔ Conta inativa.");
+                return;
+              }
+              await _continuarApoLogin();
+              return;
+            }
+          }
+        } catch(_) {}
+      }
       const msgs = {
         "auth/invalid-credential":"E-mail ou senha incorretos.",
         "auth/too-many-requests":"Muitas tentativas. Aguarde.",
@@ -5630,6 +5659,11 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
 
     // Carregar obra do colaborador
     const obras = pontoProfile.obras?.length ? pontoProfile.obras : (pontoProfile.obra_id ? [pontoProfile.obra_id] : []);
+    if(!obras.length) {
+      setMsg("pontoLoginMsg","⚠️ Nenhuma obra vinculada a este colaborador. Fale com o administrador.");
+      await signOut(authAux).catch(()=>{});
+      return;
+    }
     if(obras.length > 0) {
       try {
         if(navigator.onLine) {
