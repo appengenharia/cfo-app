@@ -1,2 +1,2 @@
-# cfo-app
-Controle financeiro de Obras
+# go-app
+Gestão de Obras
