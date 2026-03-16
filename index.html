@@ -264,8 +264,15 @@
   .evol-prog-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
   .evol-frente-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:#eff6ff;color:var(--brand);margin-bottom:4px}
   .evol-peso-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:var(--bg);color:var(--muted)}
-  .evol-dash-grid{grid-template-columns:1fr 2fr !important}
-  @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}}
+  #tab-evolucao{width:100%}
+  #tab-evolucao .evol-shell{width:100%;max-width:1180px;margin:0 auto}
+  #tab-evolucao .evol-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  #tab-evolucao .evol-kpis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+  #tab-evolucao .evol-dashboard-card{background:var(--brand2);border-radius:16px;padding:20px;margin:0 auto 14px;border:1px solid rgba(255,255,255,.07);width:100%}
+  #tab-evolucao .evol-dashboard-inner{width:100%;max-width:980px;margin:0 auto}
+  #tab-evolucao .evol-dash-grid{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr) !important;gap:24px;align-items:start;justify-content:center}
+  #tab-evolucao #evolBarraWrap,#tab-evolucao #chartEvolBarra,#tab-evolucao #chartEvolLinha{max-width:100%}
+  @media(max-width:900px){#tab-evolucao .evol-dash-grid{grid-template-columns:1fr !important}#tab-evolucao .evol-dashboard-inner{max-width:none}}
   @media(max-width:600px){.evolGrafGrid{grid-template-columns:1fr!important}}</style>
 </head>
 <body>
@@ -1242,10 +1249,10 @@
        TAB: EVOLUÇÃO DE OBRAS — Hierarquia: Obra > Grupos > Unidades > Serviços
        ══════════════════════════════════════════════════════════ -->
   <div class="tab-panel" id="tab-evolucao">
-    <div style="max-width:1100px;margin:0 auto;width:100%">
+    <div class="evol-shell">
 
       <!-- HEADER -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <div class="evol-topbar">
         <div>
           <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.35rem">📈 Evolução de Obras</h1>
           <p style="font-size:.82rem;color:var(--muted);margin-top:2px">Progresso físico por unidade e serviço</p>
@@ -1282,7 +1289,7 @@
       <div id="evolPainelPrincipal" style="display:none">
 
         <!-- KPIs escuros estilo dashboard -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px">
+        <div class="evol-kpis-grid">
           <div style="background:var(--brand2);border-radius:12px;padding:14px 16px;border:1px solid rgba(255,255,255,.08)">
             <div style="font-size:.65rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Progresso Global</div>
             <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#fff;line-height:1" id="evolKpiGlobal">0%</div>
@@ -1314,7 +1321,7 @@
         <div id="evolProximoMarco" style="display:none;margin-bottom:12px;padding:9px 14px;background:#eff6ff;border-radius:10px;border-left:4px solid var(--brand);font-size:.79rem;color:var(--brand);font-weight:500"></div>
 
         <!-- Painel gráficos estilo dashboard escuro -->
-        <div style="background:var(--brand2);border-radius:16px;padding:20px;margin-bottom:14px;border:1px solid rgba(255,255,255,.07)">
+        <div class="evol-dashboard-card"><div class="evol-dashboard-inner">
 
           <!-- Linha superior: Donut + Barras -->
           <div style="display:grid;gap:24px;align-items:start" class="evol-dash-grid">
@@ -1353,6 +1360,7 @@
             <div id="evolHistoricoVazio" style="display:none;text-align:center;color:rgba(255,255,255,.25);font-size:.75rem;padding:12px 0">Histórico aparecerá após mais registros</div>
           </div>
         </div>
+      </div>
 
         <!-- Lista de unidades/grupos -->
         <div class="card" style="padding:0;overflow:hidden">
@@ -10059,13 +10067,20 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
   function vVerFotoAmp(url, unid, svc, data, delta, tipo) {
-    $("vFotoAmpImg").src = url;
+    const imgEl   = $("vFotoAmpImg")   || $("evolFotoAmpImg");
+    const infoEl  = $("vFotoAmpInfo")  || $("evolFotoAmpInfo");
+    const modalEl = $("vModalFotoAmp") || $("modalEvolFotoAmp");
+    if(!imgEl || !infoEl || !modalEl) {
+      try { window.open(url, "_blank", "noopener,noreferrer"); } catch(_) {}
+      return;
+    }
+    imgEl.src = url;
     const dtFmt = data ? new Date(data+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}) : "";
     const tipoLabel = tipo==="depois"
       ? `<span style="background:#10b981;color:#fff;padding:1px 8px;border-radius:12px;font-size:.75rem">✅ Depois</span>`
       : `<span style="background:#f5a623;color:#fff;padding:1px 8px;border-radius:12px;font-size:.75rem">📸 Antes</span>`;
-    $("vFotoAmpInfo").innerHTML = `${tipoLabel} <strong>${unid}</strong> · ${svc} · ${dtFmt} · <span style="color:#86efac">+${delta}%</span>`;
-    $("vModalFotoAmp").classList.remove("hidden");
+    infoEl.innerHTML = `${tipoLabel} <strong>${unid}</strong> · ${svc} · ${dtFmt} · <span style="color:#86efac">+${delta}%</span>`;
+    modalEl.classList.remove("hidden");
   }
 
 
