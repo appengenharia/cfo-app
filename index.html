@@ -264,15 +264,8 @@
   .evol-prog-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
   .evol-frente-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:#eff6ff;color:var(--brand);margin-bottom:4px}
   .evol-peso-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:var(--bg);color:var(--muted)}
-  #tab-evolucao{width:100%}
-  #tab-evolucao .evol-shell{width:100%;max-width:1180px;margin:0 auto}
-  #tab-evolucao .evol-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px}
-  #tab-evolucao .evol-kpis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
-  #tab-evolucao .evol-dashboard-card{background:var(--brand2);border-radius:16px;padding:20px;margin:0 auto 14px;border:1px solid rgba(255,255,255,.07);width:100%}
-  #tab-evolucao .evol-dashboard-inner{width:100%;max-width:980px;margin:0 auto}
-  #tab-evolucao .evol-dash-grid{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr) !important;gap:24px;align-items:start;justify-content:center}
-  #tab-evolucao #evolBarraWrap,#tab-evolucao #chartEvolBarra,#tab-evolucao #chartEvolLinha{max-width:100%}
-  @media(max-width:900px){#tab-evolucao .evol-dash-grid{grid-template-columns:1fr !important}#tab-evolucao .evol-dashboard-inner{max-width:none}}
+  .evol-dash-grid{grid-template-columns:1fr 2fr !important}
+  @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}}
   @media(max-width:600px){.evolGrafGrid{grid-template-columns:1fr!important}}</style>
 </head>
 <body>
@@ -1249,10 +1242,10 @@
        TAB: EVOLUÇÃO DE OBRAS — Hierarquia: Obra > Grupos > Unidades > Serviços
        ══════════════════════════════════════════════════════════ -->
   <div class="tab-panel" id="tab-evolucao">
-    <div class="evol-shell">
+    <div style="max-width:1100px;margin:0 auto;width:100%">
 
       <!-- HEADER -->
-      <div class="evol-topbar">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
         <div>
           <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.35rem">📈 Evolução de Obras</h1>
           <p style="font-size:.82rem;color:var(--muted);margin-top:2px">Progresso físico por unidade e serviço</p>
@@ -1289,7 +1282,7 @@
       <div id="evolPainelPrincipal" style="display:none">
 
         <!-- KPIs escuros estilo dashboard -->
-        <div class="evol-kpis-grid">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px">
           <div style="background:var(--brand2);border-radius:12px;padding:14px 16px;border:1px solid rgba(255,255,255,.08)">
             <div style="font-size:.65rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Progresso Global</div>
             <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#fff;line-height:1" id="evolKpiGlobal">0%</div>
@@ -1321,7 +1314,7 @@
         <div id="evolProximoMarco" style="display:none;margin-bottom:12px;padding:9px 14px;background:#eff6ff;border-radius:10px;border-left:4px solid var(--brand);font-size:.79rem;color:var(--brand);font-weight:500"></div>
 
         <!-- Painel gráficos estilo dashboard escuro -->
-        <div class="evol-dashboard-card"><div class="evol-dashboard-inner">
+        <div style="background:var(--brand2);border-radius:16px;padding:20px;margin-bottom:14px;border:1px solid rgba(255,255,255,.07)">
 
           <!-- Linha superior: Donut + Barras -->
           <div style="display:grid;gap:24px;align-items:start" class="evol-dash-grid">
@@ -1360,7 +1353,6 @@
             <div id="evolHistoricoVazio" style="display:none;text-align:center;color:rgba(255,255,255,.25);font-size:.75rem;padding:12px 0">Histórico aparecerá após mais registros</div>
           </div>
         </div>
-      </div>
 
         <!-- Lista de unidades/grupos -->
         <div class="card" style="padding:0;overflow:hidden">
@@ -1638,6 +1630,15 @@
       <img id="evolFotoAmpImg" style="max-width:100%;max-height:85vh;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.5)" alt="">
       <div id="evolFotoAmpInfo" style="background:rgba(0,0,0,.7);color:#fff;padding:10px 14px;border-radius:0 0 12px 12px;font-size:.82rem"></div>
       <button onclick="App.closeModal('modalEvolFotoAmp')" style="position:absolute;top:-12px;right:-12px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">✕</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: Visualizar foto ampliada (Visitante) ═══ -->
+  <div class="modal-overlay hidden" id="vModalFotoAmp" onclick="App.closeModal('vModalFotoAmp')" style="align-items:center;justify-content:center;padding:16px;cursor:zoom-out;z-index:9999">
+    <div style="max-width:92vw;max-height:92vh;position:relative" onclick="event.stopPropagation()">
+      <img id="vFotoAmpImg" style="max-width:100%;max-height:85vh;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.5);display:block" alt="">
+      <div id="vFotoAmpInfo" style="background:rgba(0,0,0,.72);color:#fff;padding:10px 14px;border-radius:0 0 12px 12px;font-size:.82rem"></div>
+      <button type="button" onclick="App.closeModal('vModalFotoAmp')" style="position:absolute;top:-12px;right:-12px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">✕</button>
     </div>
   </div>
 
@@ -5434,6 +5435,33 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     return await resp.blob();
   }
 
+  function _estimateBase64Bytes(base64Str) {
+    const len = String(base64Str || "").length;
+    const padding = (base64Str.endsWith("==") ? 2 : (base64Str.endsWith("=") ? 1 : 0));
+    return Math.max(0, Math.floor((len * 3) / 4) - padding);
+  }
+
+  async function _blobToJpegDataURL(blob, maxDim = 1600, quality = 0.8) {
+    const srcDataUrl = await _blobToDataURL(blob);
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(1, maxDim / Math.max(img.naturalWidth || img.width || maxDim, img.naturalHeight || img.height || maxDim));
+        const w = Math.max(1, Math.round((img.naturalWidth || img.width || maxDim) * ratio));
+        const h = Math.max(1, Math.round((img.naturalHeight || img.height || maxDim) * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d", { alpha:false });
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve({ dataUrl: canvas.toDataURL("image/jpeg", quality), width: w, height: h });
+      };
+      img.onerror = () => reject(new Error("Falha ao compactar imagem do comprovante."));
+      img.src = srcDataUrl;
+    });
+  }
+
   function _fitInside(srcW, srcH, maxW, maxH) {
     const ratio = Math.min(maxW / srcW, maxH / srcH);
     return { w: Math.max(1, srcW * ratio), h: Math.max(1, srcH * ratio) };
@@ -5449,7 +5477,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       const paginas = [];
       for(let p=1; p<=pdf.numPages; p++) {
         const page = await pdf.getPage(p);
-        const viewport = page.getViewport({ scale: 1.35 });
+        const viewport = page.getViewport({ scale: 1.0 });
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d", { alpha:false });
         canvas.width = Math.ceil(viewport.width);
@@ -5457,19 +5485,13 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0,0,canvas.width,canvas.height);
         await page.render({ canvasContext: ctx, viewport }).promise;
-        paginas.push({ dataUrl: canvas.toDataURL("image/jpeg", 0.92), width: canvas.width, height: canvas.height, tipo: "pdf" });
+        paginas.push({ dataUrl: canvas.toDataURL("image/jpeg", 0.72), width: canvas.width, height: canvas.height, tipo: "pdf" });
       }
       return paginas;
     }
     const blob = await _fetchBlobSafe(url);
-    const dataUrl = await _blobToDataURL(blob);
-    const dims = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve({ width: img.naturalWidth || img.width || 1200, height: img.naturalHeight || img.height || 1600 });
-      img.onerror = () => reject(new Error("Falha ao ler imagem do comprovante."));
-      img.src = dataUrl;
-    });
-    return [{ dataUrl, width: dims.width, height: dims.height, tipo: "imagem" }];
+    const imgJpeg = await _blobToJpegDataURL(blob, 1600, 0.8);
+    return [{ dataUrl: imgJpeg.dataUrl, width: imgJpeg.width, height: imgJpeg.height, tipo: "imagem" }];
   }
 
   async function _appendComprovantesAoPdf(pdfDoc, lancs) {
@@ -5796,6 +5818,10 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         doc2.text("Pág. "+i+"/"+pageCount, 196, 291, {align:"right"});
       }
       const pdfBase64 = doc2.output("datauristring").split(",")[1];
+      const pdfSizeMb = _estimateBase64Bytes(pdfBase64) / (1024 * 1024);
+      if(pdfSizeMb > 9.5) {
+        throw new Error(`O relatório ficou muito pesado para envio automático (${pdfSizeMb.toFixed(1)} MB). Reduza o período ou a quantidade de comprovantes e tente novamente.`);
+      }
       const nomeArquivo = "Relatorio_"+obraNome.replace(/\s+/g,"_")+"_"+deFmt.replace(/\//g,"-")+"_a_"+ateFmt.replace(/\//g,"-")+".pdf";
       const deDate  = $("relDe")?.value  ? new Date($("relDe").value+"T12:00:00")  : new Date();
       const ateDate = $("relAte")?.value ? new Date($("relAte").value+"T12:00:00") : new Date();
@@ -5822,11 +5848,11 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       input.type="hidden"; input.name="payload"; input.value=JSON.stringify(payload);
       form.appendChild(input); document.body.appendChild(form);
       form.submit(); document.body.removeChild(form);
-      await new Promise(r=>setTimeout(r,4000));
+      await new Promise(r=>setTimeout(r,6500));
       document.body.removeChild(iframe);
-      await setDoc(doc(db,"relatorios_enviados","REL_"+Date.now()),{obra_nome:obraNome,periodo_de:$("relDe")?.value,periodo_ate:$("relAte")?.value,total:totalGeral,enviado_por:currentUser.uid,enviado_em:serverTimestamp(),destinatarios:emails});
-      toast("✅ Relatório enviado para "+emails.length+" e-mail(s)!");
-      setMsg("relMsg","✅ Enviado para "+emails.length+" destinatário(s) com PDF!",true);
+      await setDoc(doc(db,"relatorios_enviados","REL_"+Date.now()),{obra_nome:obraNome,periodo_de:$("relDe")?.value,periodo_ate:$("relAte")?.value,total:totalGeral,enviado_por:currentUser.uid,enviado_em:serverTimestamp(),destinatarios:emails,status:"solicitado_webapp"});
+      toast("📨 Solicitação de envio encaminhada para "+emails.length+" e-mail(s).");
+      setMsg("relMsg","📨 Solicitação encaminhada. Confira a caixa de entrada e spam em até 2 minutos.",true);
     } catch(e){ console.error(e); setMsg("relMsg","❌ Erro ao enviar: "+e.message); }
   }
 
@@ -10042,10 +10068,21 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         </div>` : "";
       return `
       <div style="border-radius:10px;overflow:hidden;background:rgba(255,255,255,.06);border:1.5px solid ${tipo==="depois"?"rgba(16,185,129,.3)":"rgba(245,166,35,.3)"}">
-        <div style="position:relative;cursor:zoom-in" onclick="App.vVerFotoAmp('${r.fotoUrl}','${(r.unidNome||"").replace(/'/g,"&#39;")}','${(r.svcDesc||"").replace(/'/g,"&#39;")}','${r.data||""}','${delta.toFixed(1)}','${tipo}')">
+        <button
+          type="button"
+          class="vgal-open"
+          data-url="${r.fotoUrl}"
+          data-unid="${(r.unidNome||"").replace(/"/g,"&quot;")}"
+          data-svc="${(r.svcDesc||"").replace(/"/g,"&quot;")}"
+          data-data="${r.data||""}"
+          data-delta="${delta.toFixed(1)}"
+          data-tipo="${tipo}"
+          style="position:relative;cursor:zoom-in;display:block;width:100%;padding:0;border:none;background:transparent;text-align:left"
+          aria-label="Ampliar foto"
+        >
           <img src="${r.fotoUrl}" style="width:100%;height:120px;object-fit:cover;display:block" loading="lazy" alt="">
-          <span style="position:absolute;top:5px;left:5px;background:${tipoCor};color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:16px">${tipoLabel}</span>
-        </div>
+          <span style="position:absolute;top:5px;left:5px;background:${tipoCor};color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:16px;pointer-events:none">${tipoLabel}</span>
+        </button>
         <div style="padding:6px 8px">
           <div style="font-size:.7rem;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${unid?.nome||r.unidNome||"—"}</div>
           <div style="font-size:.63rem;color:rgba(255,255,255,.4);margin-top:1px">${dtFmt} · <span style="color:#10b981">+${delta.toFixed(1)}%</span></div>
@@ -10055,6 +10092,21 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     }).join("");
 
     // Adicionar listeners após render (evita problema de onclick em módulo ES)
+    grid.querySelectorAll(".vgal-open").forEach(btn=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        vVerFotoAmp(
+          btn.dataset.url || "",
+          btn.dataset.unid || "",
+          btn.dataset.svc || "",
+          btn.dataset.data || "",
+          btn.dataset.delta || "0",
+          btn.dataset.tipo || "antes"
+        );
+      });
+    });
+
     if(podeEditar) {
       regsLimitadas.forEach(r=>{
         const safeId = r.id.replace(/[^a-zA-Z0-9]/g,"_");
@@ -10066,11 +10118,33 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     }
   }
 
+  function _ensureVisitorFotoModal() {
+    let modalEl = $("vModalFotoAmp");
+    let imgEl   = $("vFotoAmpImg");
+    let infoEl  = $("vFotoAmpInfo");
+    if(modalEl && imgEl && infoEl) return { modalEl, imgEl, infoEl };
+
+    modalEl = document.createElement("div");
+    modalEl.id = "vModalFotoAmp";
+    modalEl.className = "modal-overlay hidden";
+    modalEl.style.cssText = "align-items:center;justify-content:center;padding:16px;cursor:zoom-out;z-index:9999";
+    modalEl.innerHTML = `
+      <div style="max-width:92vw;max-height:92vh;position:relative" onclick="event.stopPropagation()">
+        <img id="vFotoAmpImg" style="max-width:100%;max-height:85vh;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.5);display:block" alt="">
+        <div id="vFotoAmpInfo" style="background:rgba(0,0,0,.72);color:#fff;padding:10px 14px;border-radius:0 0 12px 12px;font-size:.82rem"></div>
+        <button type="button" style="position:absolute;top:-12px;right:-12px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">✕</button>
+      </div>`;
+    modalEl.addEventListener("click", ()=>closeModal("vModalFotoAmp"));
+    modalEl.querySelector("button")?.addEventListener("click", ()=>closeModal("vModalFotoAmp"));
+    document.body.appendChild(modalEl);
+    imgEl  = modalEl.querySelector("#vFotoAmpImg");
+    infoEl = modalEl.querySelector("#vFotoAmpInfo");
+    return { modalEl, imgEl, infoEl };
+  }
+
   function vVerFotoAmp(url, unid, svc, data, delta, tipo) {
-    const imgEl   = $("vFotoAmpImg")   || $("evolFotoAmpImg");
-    const infoEl  = $("vFotoAmpInfo")  || $("evolFotoAmpInfo");
-    const modalEl = $("vModalFotoAmp") || $("modalEvolFotoAmp");
-    if(!imgEl || !infoEl || !modalEl) {
+    const { modalEl, imgEl, infoEl } = _ensureVisitorFotoModal();
+    if(!modalEl || !imgEl || !infoEl) {
       try { window.open(url, "_blank", "noopener,noreferrer"); } catch(_) {}
       return;
     }
@@ -10079,8 +10153,11 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const tipoLabel = tipo==="depois"
       ? `<span style="background:#10b981;color:#fff;padding:1px 8px;border-radius:12px;font-size:.75rem">✅ Depois</span>`
       : `<span style="background:#f5a623;color:#fff;padding:1px 8px;border-radius:12px;font-size:.75rem">📸 Antes</span>`;
-    infoEl.innerHTML = `${tipoLabel} <strong>${unid}</strong> · ${svc} · ${dtFmt} · <span style="color:#86efac">+${delta}%</span>`;
+    infoEl.innerHTML = `${tipoLabel} <strong>${unid || "—"}</strong> · ${svc || "—"} · ${dtFmt || "—"} · <span style="color:#86efac">+${delta}%</span>`;
     modalEl.classList.remove("hidden");
+    modalEl.style.display = "flex";
+    modalEl.style.zIndex = "9999";
+    document.body.appendChild(modalEl);
   }
 
 
