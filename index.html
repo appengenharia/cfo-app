@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
@@ -7530,7 +7529,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("rhBtnAnterior").classList.toggle("hidden", primeiro);
     $("rhBtnProximo").classList.toggle("hidden", ultimo);
     $("rhBtnFinalizar").classList.toggle("hidden", !ultimo);
-    $("rhEtapaMsg").textContent = "";
+    $("rhEtapaMsg").innerHTML = "";
 
     switch(etapa.id) {
       case "dados":    $("rhEtapaConteudo").innerHTML = rhHtmlDados();    rhPreencherDados();   break;
@@ -7540,6 +7539,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       case "nrs":      $("rhEtapaConteudo").innerHTML = rhHtmlNRs();      rhPreencherNRs();     break;
       case "resumo":   $("rhEtapaConteudo").innerHTML = rhHtmlResumo();   break;
     }
+    $("rhEtapaMsg").innerHTML = _rhStatusBannerHtml();
     rhPreviewIniciar();
   }
 
@@ -8712,6 +8712,100 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     return _rhColabsCache;
   }
 
+  function _rhDiagnosticarCadastroRh(colab, processo) {
+    const dados = processo?.dados || {};
+    const arquivos = processo?.arquivos || {};
+    const pendencias = [];
+
+    const nome = (dados.nomeCompleto || colab?.nome || "").trim();
+    const email = (dados.email || colab?.email || "").trim();
+    const cpf = (dados.cpf || "").trim();
+    const rg = (dados.rg || "").trim();
+    const funcao = (dados.funcaoOutro || dados.funcao || "").trim();
+    const admissao = (dados.admissao || "").trim();
+    const ctps = (dados.ctps || "").trim();
+    const pis = (dados.pis || "").trim();
+    const esocial = (dados.esocial || "").trim();
+
+    if(!nome) pendencias.push("Nome completo");
+    if(!email) pendencias.push("E-mail");
+    if(!cpf) pendencias.push("CPF");
+    if(!rg) pendencias.push("RG / Identidade");
+    if(!funcao) pendencias.push("Função / Cargo");
+    if(!admissao) pendencias.push("Data de admissão");
+    if(!ctps) pendencias.push("CTPS");
+    if(!pis) pendencias.push("PIS/PASEP");
+    if(!esocial) pendencias.push("Matrícula eSocial");
+
+    const docsObrig = [
+      ["rg", "Documento RG/CNH"],
+      ["ctps", "Carteira de Trabalho"],
+      ["cpf_doc", "Documento CPF"],
+      ["comprova", "Comprovante de endereço"],
+      ["pis_doc", "Documento PIS/PASEP"],
+      ["aso", "ASO"],
+    ];
+    docsObrig.forEach(([key, label]) => {
+      if(!arquivos[key]?.url) pendencias.push(label);
+    });
+
+    if(processo?.dados?.estCivil && ["casado","uniao"].includes(processo.dados.estCivil) && !arquivos.certcas?.url) {
+      pendencias.push("Certidão de casamento/união estável");
+    }
+    if((processo?.dados?.filhos||[]).length > 0 && !arquivos.certnasc?.url) {
+      pendencias.push("Certidão de nascimento dos filhos");
+    }
+    if(colab?.ativo === false) pendencias.push("Cadastro do colaborador está inativo");
+
+    let status = "pre_cadastro";
+    let titulo = "Pré-cadastro localizado";
+    let cor = "#92400e";
+    let bg = "#fffbeb";
+    let borda = "#fcd34d";
+    let icone = "🟡";
+    let mensagem = "Cadastro básico encontrado. Complete e regularize os documentos obrigatórios para concluir o processo.";
+
+    if(processo) {
+      if(pendencias.length === 0) {
+        status = "regular";
+        titulo = "Colaborador regular";
+        cor = "#065f46";
+        bg = "#ecfdf5";
+        borda = "#6ee7b7";
+        icone = "🟢";
+        mensagem = "Cadastro e documentação obrigatória localizados. As fichas e pastas do colaborador já podem ser abertas normalmente.";
+      } else {
+        status = "irregular";
+        titulo = "Colaborador irregular";
+        cor = "#991b1b";
+        bg = "#fef2f2";
+        borda = "#fca5a5";
+        icone = "🔴";
+        mensagem = "Há pendências cadastrais ou documentais. Regularize os itens indicados antes de finalizar o processo.";
+      }
+    }
+
+    return { status, titulo, cor, bg, borda, icone, mensagem, pendencias };
+  }
+
+  function _rhStatusBannerHtml() {
+    const s = rhFluxo?.statusRh;
+    if(!s) return "";
+    const itens = (s.pendencias || []).slice(0, 8).map(p => `<li>${p}</li>`).join("");
+    const extra = (s.pendencias || []).length > 8 ? `<li>... e mais ${(s.pendencias||[]).length - 8} pendência(s)</li>` : "";
+    return `
+      <div style="margin-bottom:12px;padding:12px 14px;border-radius:12px;border:1.5px solid ${s.borda};background:${s.bg};color:${s.cor}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:800;font-size:.95rem">${s.icone} ${s.titulo}</div>
+            <div style="font-size:.84rem;line-height:1.45;margin-top:4px">${s.mensagem}</div>
+          </div>
+          <span style="padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:800;background:#fff;border:1px solid ${s.borda};color:${s.cor};text-transform:uppercase">${s.status.replace("_"," ")}</span>
+        </div>
+        ${itens ? `<div style="margin-top:10px;font-size:.82rem"><strong>Pendências:</strong><ul style="margin:6px 0 0 18px;padding:0;line-height:1.5">${itens}${extra}</ul></div>` : ""}
+      </div>`;
+  }
+
   async function rhBuscarColabPorNome(valor) {
     const caixa = $("rh_nome_sugestoes"); if(!caixa) return;
     clearTimeout(_rhBuscaTimer);
@@ -8738,7 +8832,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
             <div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nome||"—"}</div>
             <div style="font-size:.75rem;color:var(--muted)">${c.email||""} ${c.ativo===false?"· <span style=color:var(--danger)>inativo</span>":""}</div>
           </div>
-          <span style="font-size:.72rem;color:var(--primary);background:#eff6ff;padding:2px 8px;border-radius:8px">Usar dados</span>
+          <span style="font-size:.72rem;color:var(--primary);background:#eff6ff;padding:2px 8px;border-radius:8px">Pré-cadastro</span>
         </div>`).join("");
       caixa.style.display = "block";
 
@@ -8761,7 +8855,6 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const c = colabs.find(x => x.id === uid);
     if(!c) return;
 
-    // Verificar se já existe processo de contratação para este colaborador
     const snap = await getDocs(collection(db,"rh_processos"));
     let processoExistente = null;
     snap.forEach(s => {
@@ -8773,76 +8866,30 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       }
     });
 
-    // Preencher dados base do colaborador no fluxo
+    const statusRh = _rhDiagnosticarCadastroRh(c, processoExistente);
     const d = rhFluxo.dados;
     d.colaboradorId = uid;
     d.nomeCompleto  = c.nome || d.nomeCompleto;
     d.email         = c.email || d.email;
     d.fotoUrl       = c.fotoUrl || d.fotoUrl;
     d.obraId        = c.obra_id || d.obraId;
+    d.obraNome      = c.obra_nome || d.obraNome || "";
+    d.telefone      = c.telefone || d.telefone || "";
+    rhFluxo.statusRh = statusRh;
 
     if(processoExistente) {
-      // Colaborador tem processo — mostrar aviso e opções: continuar ou novo
-      const etapas   = rhGetEtapas(processoExistente.tipo);
-      const etapaIdx = processoExistente.etapaAtual || 0;
-      const etapaNome = etapas[etapaIdx]?.label || "Dados";
-      const statusTxt = processoExistente.status === "concluido" ? "✅ Concluído" : `🔄 Em andamento — Etapa ${etapaIdx+1}: ${etapaNome}`;
-      const admissao  = processoExistente.dados?.admissao
-        ? new Date(processoExistente.dados.admissao+"T12:00:00").toLocaleDateString("pt-BR")
-        : "—";
-
-      // Mostrar modal de escolha
-      const overlay = document.createElement("div");
-      overlay.id = "rhProcessoExistenteOverlay";
-      overlay.style.cssText = "position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px";
-      overlay.innerHTML = `
-        <div style="background:#fff;border-radius:16px;padding:28px;max-width:460px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:slideUp .2s ease">
-          <div style="font-size:1.5rem;margin-bottom:6px">📂</div>
-          <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin:0 0 6px">Processo já existe</h3>
-          <p style="font-size:.88rem;color:var(--muted);margin:0 0 16px">
-            <strong>${c.nome}</strong> já possui um processo de contratação:
-          </p>
-          <div style="background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 16px;font-size:.85rem;margin-bottom:20px;line-height:1.8">
-            <strong>Status:</strong> ${statusTxt}<br>
-            <strong>Admissão:</strong> ${admissao}<br>
-            <strong>Função:</strong> ${processoExistente.dados?.funcaoOutro||processoExistente.dados?.funcao||"—"}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <button class="btn btn-primary" style="justify-content:flex-start;gap:10px" onclick="window._rhAbrirExistente('${processoExistente.id}')">
-              ✏️ Continuar de onde parou <span style="font-size:.78rem;opacity:.75">(Etapa ${etapaIdx+1}: ${etapaNome})</span>
-            </button>
-            <button class="btn btn-outline" style="justify-content:flex-start;gap:10px" onclick="window._rhNovoSobreExistente('${uid}')">
-              🔄 Atualizar / Sobrescrever dados existentes
-            </button>
-            <button class="btn btn-ghost" style="color:var(--muted);justify-content:center" onclick="document.getElementById('rhProcessoExistenteOverlay').remove()">
-              Cancelar
-            </button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-
-      // Handlers globais temporários
-      window._rhAbrirExistente = async (id) => {
-        overlay.remove();
-        delete window._rhAbrirExistente;
-        delete window._rhNovoSobreExistente;
-        await rhAbrirProcessoParaEdicao(id);
-      };
-      window._rhNovoSobreExistente = (uid2) => {
-        overlay.remove();
-        delete window._rhAbrirExistente;
-        delete window._rhNovoSobreExistente;
-        // Usa o processo existente mas reseta para etapa 0
-        rhFluxo.processoId = processoExistente.id;
-        rhFluxo.dados      = { ...processoExistente.dados, ...d }; // mescla priorizando dados atuais
-        _rhPreencherFormularioDados();
-        toast(`🔄 Atualizando dados de ${d.nomeCompleto}. Confira e salve.`);
-      };
-    } else {
-      // Sem processo existente — apenas preenche o formulário
-      _rhPreencherFormularioDados();
-      toast(`✅ Dados de ${d.nomeCompleto} carregados! Complete os campos trabalhistas.`);
+      if(statusRh.status === "regular") {
+        await rhAbrirProcessoParaEdicao(processoExistente.id, { statusRh });
+        toast(`✅ Cadastro regular de ${d.nomeCompleto} localizado. Fichas liberadas para consulta/atualização.`);
+      } else {
+        await rhAbrirProcessoParaEdicao(processoExistente.id, { statusRh, etapaAtual: 0 });
+        toast(`⚠️ ${statusRh.titulo}: revise e regularize as pendências de ${d.nomeCompleto}.`);
+      }
+      return;
     }
+
+    _rhPreencherFormularioDados();
+    toast(`🟡 Pré-cadastro localizado para ${d.nomeCompleto}. Complete os dados e documentos obrigatórios.`);
   }
 
   // Preenche campos visíveis do formulário com dados do rhFluxo.dados
@@ -8866,13 +8913,20 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
   // Abre processo existente direto para edição (sem modal intermediário)
-  async function rhAbrirProcessoParaEdicao(id) {
+  async function rhAbrirProcessoParaEdicao(id, opts={}) {
     const snap = await getDoc(doc(db,"rh_processos",id));
     if(!snap.exists()) { toast("Processo não encontrado."); return; }
     const p = { id:snap.id, ...snap.data() };
-    rhFluxo = { tipo:p.tipo, processoId:id, etapaAtual:p.etapaAtual||0, dados:p.dados||{}, arquivos:p.arquivos||{} };
+    rhFluxo = {
+      tipo:p.tipo,
+      processoId:id,
+      etapaAtual: typeof opts.etapaAtual === "number" ? opts.etapaAtual : (p.etapaAtual||0),
+      dados:p.dados||{},
+      arquivos:p.arquivos||{},
+      statusRh: opts.statusRh || null
+    };
     rhMostrarFluxo();
-    toast(`📂 Processo de ${p.dados?.nomeCompleto||"colaborador"} aberto na etapa ${(p.etapaAtual||0)+1}.`);
+    toast(`📂 Processo de ${p.dados?.nomeCompleto||"colaborador"} aberto na etapa ${rhFluxo.etapaAtual+1}.`);
   }
 
   function rhMaskCNPJ(el) {
