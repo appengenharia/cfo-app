@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
@@ -264,13 +265,9 @@
   .evol-prog-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
   .evol-frente-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:#eff6ff;color:var(--brand);margin-bottom:4px}
   .evol-peso-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;background:var(--bg);color:var(--muted)}
-  .evol-shell{width:min(100%,1180px);margin:0 auto}
-  #tab-evolucao{width:100%}
-  #tab-evolucao #evolVazio,#tab-evolucao #evolSemConfig,#tab-evolucao #evolPainelPrincipal{width:100%}
-  .evol-dashboard-inner{width:min(100%,980px);margin:0 auto}
-  .evol-dash-grid{display:grid;grid-template-columns:minmax(260px,300px) minmax(0,1fr) !important;justify-content:center;align-items:start}
-  @media(max-width:900px){.evol-dashboard-inner{width:100%}.evol-dash-grid{grid-template-columns:1fr !important;gap:18px !important}}
-  @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}.evolGrafGrid{grid-template-columns:1fr!important}}</style>
+  .evol-dash-grid{grid-template-columns:1fr 2fr !important}
+  @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}}
+  @media(max-width:600px){.evolGrafGrid{grid-template-columns:1fr!important}}</style>
 </head>
 <body>
 
@@ -640,9 +637,9 @@
         <label id="lancComprLabel">Comprovante (foto ou PDF)</label>
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('lancFile').click()">
           <div class="upload-icon">📎</div>
-          <div class="upload-text">Clique para anexar foto do comprovante</div>
+          <div class="upload-text">Clique para anexar foto ou PDF do comprovante</div>
           <div class="upload-sub">Máx. 10MB — JPG ou PNG</div>
-          <input type="file" id="lancFile" accept="image/*" capture="environment" style="display:none" onchange="App.onFileSelect()">
+          <input type="file" id="lancFile" accept="image/*,.pdf,application/pdf" style="display:none" onchange="App.onFileSelect()">
         </div>
         <div id="filePreview" class="hidden"></div>
         <div style="display:flex;gap:10px;margin-top:20px">
@@ -1246,7 +1243,7 @@
        TAB: EVOLUÇÃO DE OBRAS — Hierarquia: Obra > Grupos > Unidades > Serviços
        ══════════════════════════════════════════════════════════ -->
   <div class="tab-panel" id="tab-evolucao">
-    <div class="evol-shell">
+    <div style="max-width:1100px;margin:0 auto;width:100%">
 
       <!-- HEADER -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
@@ -1319,10 +1316,9 @@
 
         <!-- Painel gráficos estilo dashboard escuro -->
         <div style="background:var(--brand2);border-radius:16px;padding:20px;margin-bottom:14px;border:1px solid rgba(255,255,255,.07)">
-          <div class="evol-dashboard-inner">
 
           <!-- Linha superior: Donut + Barras -->
-          <div class="evol-dash-grid" style="gap:24px">
+          <div style="display:grid;gap:24px;align-items:start" class="evol-dash-grid">
 
             <!-- Donut: progresso global -->
             <div style="text-align:center">
@@ -1356,7 +1352,6 @@
               <canvas id="chartEvolLinha" style="position:absolute;inset:0"></canvas>
             </div>
             <div id="evolHistoricoVazio" style="display:none;text-align:center;color:rgba(255,255,255,.25);font-size:.75rem;padding:12px 0">Histórico aparecerá após mais registros</div>
-          </div>
           </div>
         </div>
 
@@ -4416,12 +4411,15 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     const file = $("lancFile").files[0];
     if(!file) return;
     if(file.size > 10 * 1024 * 1024) { toast("Arquivo muito grande (máx. 10MB)", false); return; }
-    if(!file.type.startsWith("image/")) { toast("Apenas imagens são aceitas (JPG, PNG)", false); return; }
+    const isImage = !!file.type && file.type.startsWith("image/");
+    const isPdf   = file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+    if(!isImage && !isPdf) { toast("Apenas imagens ou PDF são aceitos", false); return; }
     selectedFile = file;
     const prev = $("filePreview");
+    const icon = isPdf ? "📄" : "🖼️";
     prev.className = "file-preview";
     prev.innerHTML = `
-      <span style="font-size:1.4rem">🖼️</span>
+      <span style="font-size:1.4rem">${icon}</span>
       <span class="file-name">${file.name}</span>
       <button class="file-remove" onclick="App.removeFile()" title="Remover">✕</button>`;
   }
@@ -4436,16 +4434,31 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
 
   async function uploadFile() {
     if(!selectedFile) return null;
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+    const isImage = !!selectedFile.type && selectedFile.type.startsWith("image/");
+    const isPdf   = selectedFile.type === "application/pdf" || /\.pdf$/i.test(selectedFile.name || "");
+    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`;
     const fd = new FormData();
     fd.append("file", selectedFile);
     fd.append("upload_preset", CLOUDINARY_PRESET);
     fd.append("folder", "go");
+    fd.append("resource_type", "auto");
     try {
       const r = await fetch(url, {method:"POST", body:fd});
       const d = await r.json();
       if(d.error) { console.error("Cloudinary error:", d.error); return null; }
-      return { url: d.secure_url, tipo: "imagem", nome: selectedFile.name };
+      const secureUrl = d.secure_url || d.url || "";
+      if(!secureUrl) return null;
+      return {
+        url: secureUrl,
+        tipo: isPdf ? "pdf" : (isImage ? "imagem" : "arquivo"),
+        nome: selectedFile.name,
+        mimeType: selectedFile.type || (isPdf ? "application/pdf" : (isImage ? "image/*" : "application/octet-stream")),
+        resourceType: d.resource_type || (isPdf ? "raw" : "image"),
+        publicId: d.public_id || "",
+        format: d.format || (isPdf ? "pdf" : ""),
+        bytes: d.bytes || selectedFile.size || 0,
+        originalFilename: d.original_filename || ""
+      };
     } catch(e) { console.error("Upload error:", e); return null; }
   }
 
@@ -4601,8 +4614,9 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         const div=document.createElement("div");
         div.className="lanc-item";
         const dataFmt = l.data ? new Date(l.data+"T12:00:00").toLocaleDateString("pt-BR") : "—";
+        const compLabel = (l.comprovante?.tipo === "pdf" || l.comprovante?.mimeType === "application/pdf") ? "📄 Ver PDF" : "🖼️ Ver imagem";
         const compLink = l.comprovante?.url
-          ? `<a href="${l.comprovante.url}" target="_blank" style="font-size:.78rem;color:var(--brand);text-decoration:none">📎 Ver comprovante</a>`
+          ? `<a href="${l.comprovante.url}" target="_blank" rel="noopener noreferrer" style="font-size:.78rem;color:var(--brand);text-decoration:none">${compLabel}</a>`
           : "";
         div.innerHTML=`
           <div class="lanc-item-top">
@@ -5278,10 +5292,125 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     return lancs;
   }
 
+
   function formatDate(d) {
     if(!d) return "—";
     const parts = d.split("-");
     return parts[2]+"/"+parts[1]+"/"+parts[0];
+  }
+
+  async function _blobToDataURL(blob) {
+    return await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(new Error("Falha ao converter arquivo."));
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  async function _fetchBlobSafe(url) {
+    const resp = await fetch(url, { mode:"cors", cache:"no-store" });
+    if(!resp.ok) throw new Error("Falha ao baixar comprovante.");
+    return await resp.blob();
+  }
+
+  function _fitInside(srcW, srcH, maxW, maxH) {
+    const ratio = Math.min(maxW / srcW, maxH / srcH);
+    return { w: Math.max(1, srcW * ratio), h: Math.max(1, srcH * ratio) };
+  }
+
+  async function _comprovanteParaPaginasRender(url, comprovante) {
+    const isPdf = comprovante?.tipo === "pdf" || comprovante?.mimeType === "application/pdf" || /\.pdf(\?|$)/i.test(url || "");
+    if(isPdf) {
+      if(typeof pdfjsLib === "undefined") throw new Error("PDF.js não carregou para renderizar comprovantes.");
+      const blob = await _fetchBlobSafe(url);
+      const buffer = await blob.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const paginas = [];
+      for(let p=1; p<=pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const viewport = page.getViewport({ scale: 1.35 });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d", { alpha:false });
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        paginas.push({ dataUrl: canvas.toDataURL("image/jpeg", 0.92), width: canvas.width, height: canvas.height, tipo: "pdf" });
+      }
+      return paginas;
+    }
+    const blob = await _fetchBlobSafe(url);
+    const dataUrl = await _blobToDataURL(blob);
+    const dims = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth || img.width || 1200, height: img.naturalHeight || img.height || 1600 });
+      img.onerror = () => reject(new Error("Falha ao ler imagem do comprovante."));
+      img.src = dataUrl;
+    });
+    return [{ dataUrl, width: dims.width, height: dims.height, tipo: "imagem" }];
+  }
+
+  async function _appendComprovantesAoPdf(pdfDoc, lancs) {
+    const comprovantes = (lancs || []).filter(l => l?.comprovante?.url);
+    if(!comprovantes.length) return 0;
+
+    const pageW = pdfDoc.internal.pageSize.getWidth();
+    const pageH = pdfDoc.internal.pageSize.getHeight();
+    const marginX = 14;
+    const imgTop = 34;
+    const rodapeH = 12;
+    const maxW = pageW - (marginX * 2);
+    const maxH = pageH - imgTop - rodapeH - 10;
+    let totalPaginasInseridas = 0;
+
+    pdfDoc.addPage();
+    pdfDoc.setTextColor(15,52,96);
+    pdfDoc.setFont("helvetica","bold");
+    pdfDoc.setFontSize(14);
+    pdfDoc.text("Notas e Comprovantes Anexados", marginX, 18);
+    pdfDoc.setFont("helvetica","normal");
+    pdfDoc.setFontSize(9);
+    pdfDoc.setTextColor(90,90,90);
+    pdfDoc.text("As páginas seguintes dão continuidade ao relatório com todos os arquivos anexados aos lançamentos do período.", marginX, 24, { maxWidth: pageW - 28 });
+    totalPaginasInseridas += 1;
+
+    for(let i=0; i<comprovantes.length; i++) {
+      const lanc = comprovantes[i];
+      const comp = lanc.comprovante || {};
+      const nomeArq = comp.nome || lanc.descricao || ("Comprovante " + (i+1));
+      const paginas = await _comprovanteParaPaginasRender(comp.url, comp);
+
+      for(let j=0; j<paginas.length; j++) {
+        pdfDoc.addPage();
+        totalPaginasInseridas += 1;
+        const pagina = paginas[j];
+        const pos = _fitInside(pagina.width, pagina.height, maxW, maxH);
+        const x = (pageW - pos.w) / 2;
+        const y = imgTop + ((maxH - pos.h) / 2);
+
+        pdfDoc.setTextColor(15,52,96);
+        pdfDoc.setFont("helvetica","bold");
+        pdfDoc.setFontSize(11);
+        const tipoTxt = pagina.tipo === "pdf" ? "PDF" : "Imagem";
+        const sufixo = paginas.length > 1 ? ` · página ${j+1}/${paginas.length}` : "";
+        pdfDoc.text(`${i+1}. ${nomeArq} (${tipoTxt}${sufixo})`, marginX, 14, { maxWidth: pageW - 28 });
+        pdfDoc.setFont("helvetica","normal");
+        pdfDoc.setFontSize(8);
+        pdfDoc.setTextColor(90,90,90);
+        pdfDoc.text(`Data: ${formatDate(lanc.data)}   |   Categoria: ${lanc.categoria || "—"}   |   Valor: R$ ${Number(lanc.valor||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}`, marginX, 20, { maxWidth: pageW - 28 });
+        pdfDoc.text(`Descrição: ${lanc.descricao || "—"}`, marginX, 25, { maxWidth: pageW - 28 });
+        if(comp.url) {
+          pdfDoc.setTextColor(15,52,96);
+          pdfDoc.textWithLink("Abrir arquivo original", marginX, 30, { url: comp.url });
+        }
+        pdfDoc.setDrawColor(220,225,235);
+        pdfDoc.roundedRect(marginX-1, imgTop-4, maxW+2, maxH+4, 3, 3);
+        pdfDoc.addImage(pagina.dataUrl, "JPEG", x, y, pos.w, pos.h, undefined, "FAST");
+      }
+    }
+    return totalPaginasInseridas;
   }
 
   async function previewRelatorio() {
@@ -5311,7 +5440,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         if(l.reembolsavel) totalReemb+=v; else totalEmp+=v;
       });
       const rows = lancs.map(l =>
-        "<tr><td>"+formatDate(l.data)+"</td><td>"+(l.categoria||"—")+"</td><td>"+(l.descricao||"—")+"</td><td>"+(l.colaborador_nome||"—")+"</td><td style='text-align:right;font-weight:600'>"+brl(l.valor)+"</td><td style='text-align:center'>"+(l.reembolsavel?'<span style="color:#f59e0b;font-size:.75rem;font-weight:600">REIMB.</span>':'<span style="color:#10b981;font-size:.75rem;font-weight:600">EMP.</span>')+"</td><td style='text-align:center'>"+(l.comprovante?.url?'<a href="'+l.comprovante.url+'" target="_blank" style="color:var(--brand);font-size:.78rem">📎</a>':"—")+"</td></tr>"
+        "<tr><td>"+formatDate(l.data)+"</td><td>"+(l.categoria||"—")+"</td><td>"+(l.descricao||"—")+"</td><td>"+(l.colaborador_nome||"—")+"</td><td style='text-align:right;font-weight:600'>"+brl(l.valor)+"</td><td style='text-align:center'>"+(l.reembolsavel?'<span style="color:#f59e0b;font-size:.75rem;font-weight:600">REIMB.</span>':'<span style="color:#10b981;font-size:.75rem;font-weight:600">EMP.</span>')+"</td><td style='text-align:center'>"+(l.comprovante?.url?'<a href="'+l.comprovante.url+'" target="_blank" rel="noopener noreferrer" style="color:var(--brand);font-size:.78rem">'+((l.comprovante?.tipo==="pdf"||l.comprovante?.mimeType==="application/pdf")?'📄 PDF':'🖼️ IMG')+'</a>':"—")+"</td></tr>"
       ).join("");
       const catRows = cats.map(c =>
         "<tr><td><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+CATEGORIAS_CORES[c]+";margin-right:6px'></span>"+c+"</td><td style='text-align:right;font-weight:600'>"+brl(totCat[c])+"</td></tr>"
@@ -5394,10 +5523,12 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       const catRows = cats.map(c=>[c,brl(totCat[c])]);
       catRows.push(["TOTAL GERAL",brl(totalGeral)]);
       docPdf.autoTable({startY:finalY+4,head:[["Categoria","Total Acumulado"]],body:catRows,styles:{fontSize:9,cellPadding:2},headStyles:{fillColor:[15,52,96],textColor:255,fontStyle:"bold"},columnStyles:{1:{halign:"right"}},didParseCell:(d)=>{if(d.row.index===catRows.length-1){d.cell.styles.fontStyle="bold";d.cell.styles.textColor=[233,69,96];}},margin:{left:14,right:14}});
+      await _appendComprovantesAoPdf(docPdf, lancs);
+      const dataRodape = new Date().toLocaleDateString("pt-BR");
       const pg = docPdf.internal.getNumberOfPages();
       for(let i=1;i<=pg;i++){
         docPdf.setPage(i); docPdf.setFontSize(7); docPdf.setTextColor(150,150,150);
-        docPdf.text("GO — Relatório gerado em "+new Date().toLocaleDateString("pt-BR")+" · Pág. "+i+"/"+pg, 14, 292);
+        docPdf.text("GO — Relatório gerado em "+dataRodape+" · Pág. "+i+"/"+pg, 14, 292);
         docPdf.text("Empresa: "+brl(totalEmp)+" · Reembolsável: "+brl(totalReemb), 196, 292, {align:"right"});
       }
       const fileName = "GO_"+obraNome.replace(/\s+/g,"_")+"_"+deFmt.replace(/\//g,"-")+".pdf";
@@ -5406,6 +5537,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       return docPdf.output("datauristring");
     } catch(e){ console.error(e); setMsg("relMsg","❌ Erro ao gerar PDF: "+e.message); return null; }
   }
+
 
   async function loadEmailConfig() {
     try {
@@ -5534,6 +5666,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         y=doc2.lastAutoTable.finalY+6;
         if(y>250){doc2.addPage();y=20;}
       }
+      await _appendComprovantesAoPdf(doc2, lancs);
       const pageCount=doc2.internal.getNumberOfPages();
       for(let i=1;i<=pageCount;i++){
         doc2.setPage(i);
@@ -5549,10 +5682,16 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       const meses   = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
       const periodoLabel = meses[deDate.getMonth()]+"-"+deDate.getFullYear()+(deDate.getMonth()!==ateDate.getMonth()?" a "+meses[ateDate.getMonth()]+"-"+ateDate.getFullYear():"");
       const comprovantes = lancs.filter(l=>l.comprovante?.url);
-      const linksComp = comprovantes.length>0?comprovantes.map(l=>`<a href="${l.comprovante.url}" style="color:#0f3460">${l.comprovante.url}</a>`).join("<br>"):"Nenhum comprovante anexado.";
+      const linksComp = comprovantes.length>0
+        ? comprovantes.map(l=>{
+            const label = (l.comprovante?.tipo === "pdf" || l.comprovante?.mimeType === "application/pdf") ? "PDF" : "Imagem";
+            const nome  = l.comprovante?.nome || l.descricao || "Comprovante";
+            return `<div style="margin-bottom:6px"><strong>[${label}]</strong> ${nome}<br><a href="${l.comprovante.url}" style="color:#0f3460">${l.comprovante.url}</a></div>`;
+          }).join("")
+        : "Nenhum comprovante anexado.";
       const htmlBody = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto"><div style="background:#0f3460;color:white;padding:20px 24px;border-radius:8px 8px 0 0"><h2 style="margin:0;font-size:18px">GO — Gestão de Obras</h2><p style="margin:6px 0 0;font-size:13px;opacity:.85">Relatório de Despesas — ${obraNome}</p></div><div style="padding:20px 24px;border:1px solid #e0e0e0;border-top:none"><p style="margin:0 0 4px"><strong>Período:</strong> ${deFmt} a ${ateFmt}</p><p style="margin:0 0 16px"><strong>Emitido em:</strong> ${dataEnvio}</p><hr style="border:none;border-top:1px solid #eee;margin:12px 0"><p style="margin:4px 0"><strong>Empresa:</strong> ${brl(totalEmp)}</p><p style="margin:4px 0"><strong>Reembolsável:</strong> ${brl(totalReemb)}</p><p style="margin:8px 0 4px;font-size:16px;font-weight:bold;color:#e94560">TOTAL GERAL: ${brl(totalGeral)}</p><p style="margin:4px 0"><strong>Lançamentos:</strong> ${lancs.length}</p><hr style="border:none;border-top:1px solid #eee;margin:12px 0"><p style="margin:0 0 6px"><strong>Comprovantes:</strong></p><p style="font-size:12px;line-height:1.8">${linksComp}</p><hr style="border:none;border-top:1px solid #eee;margin:12px 0"><p style="font-size:11px;color:#888">O relatório completo está anexado em PDF.<br>GO — Gestão de Obras · Gerado automaticamente em ${dataEnvio}</p></div></div>`;
       setMsg("relMsg","⏳ Enviando e-mail com PDF anexado...");
-      const payload = {emails,assunto:"Relatório GO — "+obraNome+" — "+periodoLabel,corpo:htmlBody,pdf:pdfBase64,nomeArquivo};
+      const payload = {emails,assunto:"Relatório GO — "+obraNome+" — "+periodoLabel,corpo:htmlBody,pdf:pdfBase64,nomeArquivo,comprovantes: comprovantes.map(l=>({nome:l.comprovante?.nome||l.descricao||"Comprovante",url:l.comprovante?.url||"",tipo:l.comprovante?.tipo||"arquivo",mimeType:l.comprovante?.mimeType||""}))};
       const iframeName = "emailFrame_"+Date.now();
       const iframe = document.createElement("iframe");
       iframe.name = iframeName; iframe.style.display="none";
