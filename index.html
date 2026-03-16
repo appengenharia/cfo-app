@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
@@ -33,6 +34,16 @@
   /* ── RH ── */
   .rh-screen { display:none }
   .rh-screen.active { display:block }
+  .rh-home-shell{max-width:1120px;width:100%;margin:0 auto;padding:0 0 24px;}
+  .rh-home-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;}
+  .rh-home-main-card{max-width:100%;margin:0 auto;}
+  .rh-status-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;border:1px solid transparent;white-space:nowrap;}
+  .rh-status-chip.regular{background:#ecfdf5;color:#065f46;border-color:#6ee7b7;}
+  .rh-status-chip.pre_cadastro{background:#fffbeb;color:#92400e;border-color:#fcd34d;}
+  .rh-status-chip.irregular{background:#fef2f2;color:#991b1b;border-color:#fca5a5;}
+  .rh-processo-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+  .rh-processo-pend{font-size:.74rem;color:var(--muted);}
+  @media(min-width:1024px){.rh-home-grid{grid-template-columns:minmax(0,1fr);}}
 
   /* Fluxo RH — tela cheia abaixo da topbar (sem coluna de preview) */
   .rh-fluxo-ativo .app-content { padding:0 !important; overflow:hidden; }
@@ -1103,33 +1114,37 @@
 
     <!-- ── Tela inicial: escolher colaborador ou criar novo ── -->
     <div id="rh-home" class="rh-screen active">
-      <div class="page-header" style="text-align:center;max-width:700px;margin:0 auto 24px"><h1>👔 Recursos Humanos</h1><p>Gerencie processos de contratação e demissão de colaboradores.</p></div>
+      <div class="rh-home-shell">
+        <div class="page-header" style="text-align:center;max-width:760px;margin:0 auto 24px"><h1>👔 Recursos Humanos</h1><p>Gerencie processos de contratação e demissão de colaboradores.</p></div>
 
-      <!-- Ações rápidas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto">
-        <div class="card rh-action-card" onclick="App.rhIniciarFluxo('contratacao')" style="cursor:pointer;text-align:center;padding:28px 16px;transition:.2s">
-          <div style="font-size:2.5rem;margin-bottom:8px">📋</div>
-          <div style="font-weight:700;font-size:1rem;color:var(--primary)">Nova Contratação</div>
-          <div style="font-size:.8rem;color:var(--muted);margin-top:4px">Iniciar processo admissional</div>
-        </div>
-        <div class="card rh-action-card" onclick="App.rhIniciarFluxo('demissao')" style="cursor:pointer;text-align:center;padding:28px 16px;transition:.2s">
-          <div style="font-size:2.5rem;margin-bottom:8px">📤</div>
-          <div style="font-weight:700;font-size:1rem;color:#e94560">Demissão</div>
-          <div style="font-size:.8rem;color:var(--muted);margin-top:4px">Iniciar processo demissional</div>
-        </div>
-      </div>
+        <div class="rh-home-grid">
+          <!-- Ações rápidas -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:0 auto 4px;max-width:720px;width:100%">
+            <div class="card rh-action-card" onclick="App.rhIniciarFluxo('contratacao')" style="cursor:pointer;text-align:center;padding:28px 16px;transition:.2s;margin-bottom:0">
+              <div style="font-size:2.5rem;margin-bottom:8px">📋</div>
+              <div style="font-weight:700;font-size:1rem;color:var(--primary)">Nova Contratação</div>
+              <div style="font-size:.8rem;color:var(--muted);margin-top:4px">Iniciar processo admissional</div>
+            </div>
+            <div class="card rh-action-card" onclick="App.rhIniciarFluxo('demissao')" style="cursor:pointer;text-align:center;padding:28px 16px;transition:.2s;margin-bottom:0">
+              <div style="font-size:2.5rem;margin-bottom:8px">📤</div>
+              <div style="font-weight:700;font-size:1rem;color:#e94560">Demissão</div>
+              <div style="font-size:.8rem;color:var(--muted);margin-top:4px">Iniciar processo demissional</div>
+            </div>
+          </div>
 
-      <!-- Alertas de exames vencidos/próximos do vencimento -->
-      <div id="rhAlertasExames" style="max-width:700px;margin:0 auto 4px"></div>
+          <!-- Alertas de exames vencidos/próximos do vencimento -->
+          <div id="rhAlertasExames" style="max-width:920px;margin:0 auto 4px;width:100%"></div>
 
-      <!-- Lista de processos em andamento -->
-      <div class="card" style="max-width:700px;margin:0 auto">
-        <div class="card-header" style="margin-bottom:12px">
-          <h3>📂 Processos em Andamento</h3>
-          <input id="rhBusca" type="text" placeholder="Buscar colaborador..." oninput="App.rhFiltrarLista()" style="max-width:240px;margin:0">
-        </div>
-        <div id="rhListaProcessos">
-          <div style="text-align:center;padding:32px;color:var(--muted)">Nenhum processo em andamento.</div>
+          <!-- Lista de processos em andamento -->
+          <div class="card rh-home-main-card" style="max-width:920px;width:100%;margin:0 auto">
+            <div class="card-header" style="margin-bottom:12px;gap:12px;flex-wrap:wrap">
+              <h3>📂 Processos em Andamento</h3>
+              <input id="rhBusca" type="text" placeholder="Buscar colaborador..." oninput="App.rhFiltrarLista()" style="max-width:260px;margin:0 0 0 auto">
+            </div>
+            <div id="rhListaProcessos">
+              <div style="text-align:center;padding:32px;color:var(--muted)">Nenhum processo em andamento.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -8464,13 +8479,18 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       const snap = await getDocs(collection(db,"rh_processos"));
       const processos = [];
       snap.forEach(d => processos.push({id:d.id,...d.data()}));
-      const filtrados = filtro
-        ? processos.filter(p => (p.dados?.nomeCompleto||"").toLowerCase().includes(filtro.toLowerCase()))
+      const termo = (filtro||"").toLowerCase().trim();
+      const filtrados = termo
+        ? processos.filter(p => {
+            const d = p.dados || {};
+            return [d.nomeCompleto, d.email, d.funcaoOutro, d.funcao, d.obraNome].filter(Boolean).join(' ').toLowerCase().includes(termo);
+          })
         : processos;
       if(!filtrados.length) {
         lista.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">Nenhum processo encontrado.</div>';
         return;
       }
+      const colabs = await _rhCarregarColabs();
       filtrados.sort((a,b) => (b.atualizadoEm?.seconds||0) - (a.atualizadoEm?.seconds||0));
       lista.innerHTML = filtrados.map(p => {
         const d = p.dados || {};
@@ -8480,12 +8500,17 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         const statusTxt  = p.status==="concluido" ? "✅ Concluído" : "🔄 Em andamento";
         const etapas = rhGetEtapas(p.tipo);
         const progresso  = Math.round(((p.etapaAtual||0)/(etapas.length-1))*100);
+        const colabRef = colabs.find(c => c.id === d.colaboradorId) || colabs.find(c => (c.email||'').toLowerCase() === (d.email||'').toLowerCase()) || null;
+        const statusRh = p.tipo === 'contratacao' ? _rhDiagnosticarCadastroRh(colabRef, p) : null;
+        const statusChip = statusRh ? `<span class="rh-status-chip ${statusRh.status}">${statusRh.icone} ${statusRh.titulo}</span>` : '';
+        const pendTxt = statusRh && statusRh.pendencias?.length ? `<div class="rh-processo-pend">Pendências: ${statusRh.pendencias.slice(0,2).join(', ')}${statusRh.pendencias.length>2 ? ` +${statusRh.pendencias.length-2}` : ''}</div>` : '';
         return `
         <div class="rh-processo-card" onclick="App.rhAbrirProcesso('${p.id}')">
-          <div style="flex:1">
-            <div style="font-weight:600;margin-bottom:4px">${d.nomeCompleto||"Sem nome"}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;margin-bottom:4px">${d.nomeCompleto||"Sem nome"}</div>
             <div style="font-size:.78rem;color:var(--muted)">${d.funcaoOutro||d.funcao||"—"} · ${d.admissao?new Date(d.admissao+"T12:00:00").toLocaleDateString("pt-BR"):"—"}</div>
-            <div style="margin-top:6px;height:4px;background:var(--border);border-radius:2px;max-width:200px">
+            <div class="rh-processo-meta">${statusChip}${pendTxt}</div>
+            <div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;max-width:240px">
               <div style="height:4px;background:var(--primary);border-radius:2px;width:${progresso}%"></div>
             </div>
           </div>
