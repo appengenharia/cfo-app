@@ -3207,6 +3207,7 @@
       try{
         ev.preventDefault();
         ev.stopPropagation();
+        ev.stopImmediatePropagation && ev.stopImmediatePropagation();
       }catch(_){ }
       try{ openFn(); }catch(_){ }
     };
@@ -3215,6 +3216,7 @@
         try{
           ev.preventDefault();
           ev.stopPropagation();
+          ev.stopImmediatePropagation && ev.stopImmediatePropagation();
         }catch(_){ }
         try{ openFn(); }catch(_){ }
       }
@@ -3227,6 +3229,57 @@
     if(!el.hasAttribute("tabindex")) el.setAttribute("tabindex","0");
     el.addEventListener("click", clickHandler, true);
     el.addEventListener("keydown", keyHandler, true);
+  }
+
+  let _ampDelegationReady = false;
+  function _initAmpDelegation(){
+    if(_ampDelegationReady) return;
+    _ampDelegationReady = true;
+
+    const handleOpen = (target)=>{
+      const vFoto = target.closest?.('.vFotoAmpTrigger');
+      if(vFoto){
+        const regId = vFoto.getAttribute('data-reg-id');
+        const reg = (_vGaleriaRegistros || []).find(r => String(r.id||'') === String(regId||''));
+        if(reg){
+          const delta = (Number(reg.pctDepois)||0) - (Number(reg.pctAntes)||0);
+          return vVerFotoAmp(reg.fotoUrl, reg.unidNome || '', reg.svcDesc || '', reg.data || '', delta.toFixed(1), reg.tipoFoto || 'antes');
+        }
+        const src = vFoto.getAttribute('data-src') || vFoto.querySelector('img')?.src || '';
+        return _abrirImagemAmp(src, '<strong>Registro fotográfico</strong>', 'Nenhuma foto disponível.');
+      }
+
+      if(target.closest?.('#vClimaThumbTrigger') || target.id === 'vClimaThumb' || target.closest?.('#vClimaThumbWrap')) return vVerClimaAmp();
+      if(target.closest?.('#evolClimaThumbTrigger') || target.id === 'evolClimaThumb' || target.closest?.('#evolClimaThumbWrap')) return evolVerClimaFoto();
+      return null;
+    };
+
+    document.addEventListener('click', (ev)=>{
+      const target = ev.target;
+      if(!target || !target.closest) return;
+      const hit = target.closest('.vFotoAmpTrigger, #vClimaThumbTrigger, #vClimaThumbWrap, #vClimaThumb, #evolClimaThumbTrigger, #evolClimaThumbWrap, #evolClimaThumb');
+      if(!hit) return;
+      try{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+      }catch(_){ }
+      try{ handleOpen(target); }catch(_){ }
+    }, true);
+
+    document.addEventListener('keydown', (ev)=>{
+      if(ev.key !== 'Enter' && ev.key !== ' ') return;
+      const target = ev.target;
+      if(!target || !target.closest) return;
+      const hit = target.closest('.vFotoAmpTrigger, #vClimaThumbTrigger, #vClimaThumbWrap, #vClimaThumb, #evolClimaThumbTrigger, #evolClimaThumbWrap, #evolClimaThumb');
+      if(!hit) return;
+      try{
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+      }catch(_){ }
+      try{ handleOpen(target); }catch(_){ }
+    }, true);
   }
 
   function _ePerdaDia(row){
@@ -10357,7 +10410,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       <div style="border-radius:10px;overflow:hidden;background:rgba(255,255,255,.06);border:1.5px solid ${tipo==="depois"?"rgba(16,185,129,.3)":"rgba(245,166,35,.3)"}">
         <div class="vFotoAmpTrigger" data-reg-id="${r.id}" style="position:relative;cursor:zoom-in">
           <img src="${r.fotoUrl}" style="width:100%;height:120px;object-fit:cover;display:block;pointer-events:none" loading="lazy" alt="">
-          <span style="position:absolute;top:5px;left:5px;background:${tipoCor};color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:16px">${tipoLabel}</span>
+          <span style="position:absolute;top:5px;left:5px;background:${tipoCor};color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:16px;pointer-events:none">${tipoLabel}</span>
         </div>
         <div style="padding:6px 8px">
           <div style="font-size:.7rem;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${unid?.nome||r.unidNome||"—"}</div>
@@ -10434,7 +10487,9 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
   // ── fim módulo visitante ──
 
-    window.App = {
+    _initAmpDelegation();
+
+  window.App = {
     // Auth
     login, logout, togglePass, changePassword,
     // Navegação
