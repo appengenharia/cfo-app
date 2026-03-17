@@ -1831,12 +1831,14 @@
     <input id="editColabNome" type="text" placeholder="Nome do colaborador">
     <label style="margin-top:12px">E-mail</label>
     <input id="editColabEmail" type="email" placeholder="email@exemplo.com">
-    <div style="margin-top:12px;background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 14px" id="editEvolRespWrap">
-      <label style="margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--brand)">
-        <input type="checkbox" id="editEvolResp" style="width:18px;height:18px;accent-color:var(--brand);flex-shrink:0">
-        <span style="font-weight:600;font-size:.85rem">📈 Responsável pela evolução da obra</span>
-      </label>
-      <div style="font-size:.74rem;color:var(--muted);margin-top:4px;margin-left:26px">Permite registrar progresso de unidades e serviços.</div>
+    <div style="margin-top:12px;background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 14px" id="editPerfilWrap">
+      <label style="margin:0;color:var(--brand);font-weight:600;font-size:.85rem">Perfil do colaborador</label>
+      <select id="editPerfil" style="margin-top:8px;background:#fff">
+        <option value="COLAB">👤 Colaborador</option>
+        <option value="RESP">📈 Responsável pela obra</option>
+        <option value="VISITANTE">👁️ Visitante</option>
+      </select>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:6px">Defina se o usuário será apenas colaborador, responsável pela obra ou visitante.</div>
     </div>
     <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:.79rem;color:#92400e">
       ⚠️ O e-mail exibido aqui é apenas para identificação no sistema. O e-mail de login (Firebase Auth) não muda — o colaborador continua usando o e-mail original para entrar. Use o botão <strong>🔑 Senha</strong> para redefinir o acesso se necessário.
@@ -2083,6 +2085,10 @@
     const btn=$("btnLogin");
     if(!email){setMsg("loginMsg","Informe o e-mail.");return;}
     if(!password){setMsg("loginMsg","Informe a senha.");return;}
+    try {
+      sessionStorage.setItem("go_login_email", email);
+      sessionStorage.setItem("go_login_pass", password);
+    } catch(_){}
     btn.disabled=true; btn.textContent="Entrando...";
     try {
       await signInWithEmailAndPassword(auth,email,password);
@@ -2116,6 +2122,10 @@
   }
 
   async function logout(){
+    try {
+      sessionStorage.removeItem("go_login_email");
+      sessionStorage.removeItem("go_login_pass");
+    } catch(_){}
     await signOut(auth);
     currentUser = null;
     currentRole = null;
@@ -2236,6 +2246,22 @@
       showPage("visitantePage");
       $("vNomeVisitante").textContent = nome;
       await visitanteInicializar(profile?.obra_id||"");
+      return;
+    }
+
+    if(currentRole==="USER" && profile?.evolResponsavel!==true){
+      irParaPonto();
+      const pontoEmail = $("pontoEmail");
+      const pontoSenha = $("pontoSenha");
+      const emailCache = (()=>{ try { return sessionStorage.getItem("go_login_email") || user?.email || profile?.email || ""; } catch(_) { return user?.email || profile?.email || ""; } })();
+      const passCache  = (()=>{ try { return sessionStorage.getItem("go_login_pass") || ""; } catch(_) { return ""; } })();
+      if(pontoEmail) pontoEmail.value = emailCache;
+      if(pontoSenha) pontoSenha.value = passCache;
+      if(passCache){
+        setTimeout(()=>{ loginPonto().catch(()=>{}); }, 80);
+      } else {
+        setMsg("pontoLoginMsg","Informe sua senha para registrar o ponto.");
+      }
       return;
     }
 
@@ -4607,13 +4633,15 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("editColabUid").value   = uid;
     $("editColabNome").value  = nome;
     $("editColabEmail").value = email;
-    // Preencher checkbox evolResponsavel
-    const u = allUsers.find(x=>x.id===uid);
-    const cb = $("editEvolResp");
-    if(cb) cb.checked = u?.evolResponsavel===true;
-    // Ocultar para ADMIN (não faz sentido)
-    const wrap = $("editEvolRespWrap");
-    if(wrap) wrap.style.display = u?.role==="ADMIN" ? "none" : "";
+    const u = allUsers.find(x=>x.id===uid) || {};
+    const sel = $("editPerfil");
+    if(sel){
+      if(u?.role === "VISITANTE") sel.value = "VISITANTE";
+      else if(u?.evolResponsavel === true) sel.value = "RESP";
+      else sel.value = "COLAB";
+    }
+    const wrap = $("editPerfilWrap");
+    if(wrap) wrap.style.display = u?.role === "ADMIN" ? "none" : "";
     setMsg("editColabMsg","");
     $("btnSalvarEditColab").disabled = false;
     $("btnSalvarEditColab").textContent = "💾 Salvar";
@@ -4629,8 +4657,22 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     const btn = $("btnSalvarEditColab");
     btn.disabled = true; btn.textContent = "Salvando...";
     try {
-      const evolResp = $("editEvolResp")?.checked || false;
-      await updateDoc(doc(db,"usuarios",uid), { nome, email, evolResponsavel: evolResp });
+      const atual = allUsers.find(x=>x.id===uid) || {};
+      const payload = { nome, email };
+      if(atual?.role !== "ADMIN"){
+        const perfil = $("editPerfil")?.value || "COLAB";
+        if(perfil === "VISITANTE"){
+          payload.role = "VISITANTE";
+          payload.evolResponsavel = false;
+        } else if(perfil === "RESP"){
+          payload.role = "USER";
+          payload.evolResponsavel = true;
+        } else {
+          payload.role = "USER";
+          payload.evolResponsavel = false;
+        }
+      }
+      await updateDoc(doc(db,"usuarios",uid), payload);
       toast("✅ Dados atualizados!");
       closeModal("modalEditColab");
       await loadUsers();
