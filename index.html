@@ -1716,7 +1716,10 @@
         <input type="hidden" id="evolDiaPrintUrlAtual">
         <div id="evolDiaPrintPreviewWrap" style="display:none;margin-top:10px">
           <img id="evolDiaPrintPreview" src="" alt="Prévia do monitoramento" style="max-width:100%;max-height:220px;border-radius:12px;border:1px solid var(--border)">
-          <div id="evolDiaPrintPreviewInfo" style="font-size:.75rem;color:var(--muted);margin-top:6px"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px">
+            <div id="evolDiaPrintPreviewInfo" style="font-size:.75rem;color:var(--muted)"></div>
+            <button type="button" class="btn btn-outline sm" id="btnEvolDiaRemoverPrint" onclick="App.evolRemoverClimaFoto()" style="display:none;border-color:#fecaca;color:#b91c1c">🗑️ Remover imagem</button>
+          </div>
         </div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
@@ -2827,6 +2830,7 @@
   let _eFiltroGrupo = "";
   let _eClimaHist = [];
   let _eClimaPrintFile = null;
+  let _eClimaPreviewUrl = null;
   let _eClimaPrintUrl = "";
 
   const E_CORES = ["#0f3460","#e94560","#10b981","#f5a623","#6366f1","#ec4899","#14b8a6","#f97316","#8b5cf6","#06b6d4","#84cc16","#ef4444","#dc2626","#7c3aed","#0284c7","#16a34a"];
@@ -3264,20 +3268,39 @@
 
   function _eLimparPreviewDiario(){
     _eClimaPrintFile = null;
+    if(_eClimaPreviewUrl){ try{ URL.revokeObjectURL(_eClimaPreviewUrl); }catch(_){} _eClimaPreviewUrl = null; }
     if($("evolDiaPrint")) $("evolDiaPrint").value = "";
+    if($("evolDiaPrintUrlAtual")) $("evolDiaPrintUrlAtual").value = "";
     if($("evolDiaPrintPreviewWrap")) $("evolDiaPrintPreviewWrap").style.display = "none";
     if($("evolDiaPrintPreview")) $("evolDiaPrintPreview").src = "";
     if($("evolDiaPrintPreviewInfo")) $("evolDiaPrintPreviewInfo").textContent = "";
+    if($("btnEvolDiaRemoverPrint")) $("btnEvolDiaRemoverPrint").style.display = "none";
+  }
+
+  function evolRemoverClimaFoto(){
+    _eClimaPrintFile = null;
+    if(_eClimaPreviewUrl){ try{ URL.revokeObjectURL(_eClimaPreviewUrl); }catch(_){} _eClimaPreviewUrl = null; }
+    if($("evolDiaPrint")) $("evolDiaPrint").value = "";
+    if($("evolDiaPrintUrlAtual")) $("evolDiaPrintUrlAtual").value = "";
+    if($("evolDiaPrintPreviewWrap")) $("evolDiaPrintPreviewWrap").style.display = "none";
+    if($("evolDiaPrintPreview")) $("evolDiaPrintPreview").src = "";
+    if($("evolDiaPrintPreviewInfo")) $("evolDiaPrintPreviewInfo").textContent = "Imagem removida. Salve o diário para confirmar a exclusão.";
+    if($("btnEvolDiaRemoverPrint")) $("btnEvolDiaRemoverPrint").style.display = "none";
+    toast("Imagem removida do diário. Salve para confirmar.","ok");
   }
 
   function evolClimaFotoSel(input){
     const file = input?.files?.[0];
     if(!file) return;
+    if(_eClimaPreviewUrl){ try{ URL.revokeObjectURL(_eClimaPreviewUrl); }catch(_){} _eClimaPreviewUrl = null; }
     _eClimaPrintFile = file;
     const url = URL.createObjectURL(file);
+    _eClimaPreviewUrl = url;
+    if($("evolDiaPrintUrlAtual")) $("evolDiaPrintUrlAtual").value = "";
     if($("evolDiaPrintPreview")) $("evolDiaPrintPreview").src = url;
     if($("evolDiaPrintPreviewWrap")) $("evolDiaPrintPreviewWrap").style.display = "";
     if($("evolDiaPrintPreviewInfo")) $("evolDiaPrintPreviewInfo").textContent = `${file.name} · ${(file.size/1024/1024).toFixed(2)} MB`;
+    if($("btnEvolDiaRemoverPrint")) $("btnEvolDiaRemoverPrint").style.display = "inline-flex";
   }
 
   function evolAtualizarCamposDiario(){
@@ -3336,6 +3359,7 @@
         if($("evolDiaPrintPreview")) $("evolDiaPrintPreview").src = r.printMonitorUrl;
         if($("evolDiaPrintPreviewWrap")) $("evolDiaPrintPreviewWrap").style.display = "";
         if($("evolDiaPrintPreviewInfo")) $("evolDiaPrintPreviewInfo").textContent = r.printMonitorNome || "Print já anexado";
+        if($("btnEvolDiaRemoverPrint")) $("btnEvolDiaRemoverPrint").style.display = "inline-flex";
       }
       evolAtualizarCamposDiario();
     }catch(e){ console.error(e); }
@@ -9798,8 +9822,9 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   // MÓDULO VISITANTE — somente leitura
   // ══════════════════════════════════════════════════════════
   let _vObraId = "", _vCfg = null, _vProg = {}, _vCont = null;
-  let _vChartB = null, _vChartL = null;
+  let _vChartB = null, _vChartL = null, _vChartClima = null;
   let _vGaleriaRegistros = [];
+  let _vClimaHist = [], _vClimaPrintUrl = "";
   const E_CORES_V = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#84cc16","#f97316","#ec4899","#14b8a6","#6366f1","#d946ef","#0ea5e9","#22c55e","#eab308","#f43f5e"];
 
   function _vPctSvc(uid, sid) {
@@ -10014,18 +10039,114 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     Chart.defaults.borderColor = "rgba(0,0,0,0.1)";
   }
 
+  function _vPerdaDia(row){
+    if(!row) return 0;
+    if(row.houveProducao === "nao") return 1;
+    if(row.houveProducao === "parcial"){
+      const pct = Math.max(0, Math.min(100, Number(row.percentualProducaoDia)||0));
+      return (100 - pct) / 100;
+    }
+    return 0;
+  }
+
+  function _vRenderClimaPainel(rows){
+    _vClimaHist = Array.isArray(rows) ? rows : [];
+    const diarios = _vClimaHist
+      .filter(r => r && (r.diarioClimaPreenchido || r.printMonitorUrl || r.houveProducao || r.clima || r.motivoParalisacao))
+      .sort((a,b)=> String(a.data||"").localeCompare(String(b.data||"")));
+
+    const prod = diarios.filter(r=>r.houveProducao === "sim").length;
+    const parcial = diarios.filter(r=>r.houveProducao === "parcial").length;
+    const clima = diarios.filter(r=>r.houveProducao === "nao" && r.causaDia === "clima").length;
+    const perdidos = diarios.reduce((acc,row)=> acc + _vPerdaDia(row), 0);
+
+    if($("vClimaKpiProd")) $("vClimaKpiProd").textContent = prod;
+    if($("vClimaKpiParcial")) $("vClimaKpiParcial").textContent = parcial;
+    if($("vClimaKpiClima")) $("vClimaKpiClima").textContent = clima;
+    if($("vClimaKpiPerdidos")) $("vClimaKpiPerdidos").textContent = perdidos.toFixed(1).replace('.',',');
+
+    const latest = diarios.length ? diarios[diarios.length-1] : null;
+    if(latest){
+      if($("vClimaResumoBox")) $("vClimaResumoBox").style.display = "";
+      const base = latest.houveProducao === "nao" ? "Sem produção" : latest.houveProducao === "parcial" ? "Produção parcial" : "Produção normal";
+      const climaTxt = latest.clima ? ` · Clima: ${latest.clima}` : "";
+      const raioTxt = latest.houveRaio === "sim" ? ` · Raios${latest.distanciaRaioKm ? ` a ${String(latest.distanciaRaioKm).replace('.',',')} km` : ''}` : "";
+      if($("vClimaResumo")) $("vClimaResumo").textContent = `${latest.data || ''} · ${base}${climaTxt}${raioTxt}`;
+      if($("vClimaUltimoMeta")) $("vClimaUltimoMeta").textContent = `${latest.motivoParalisacao || latest.observacao || 'Sem observações adicionais.'}`;
+      if(latest.printMonitorUrl){
+        _vClimaPrintUrl = latest.printMonitorUrl;
+        if($("vClimaThumb")) $("vClimaThumb").src = latest.printMonitorUrl;
+        if($("vClimaThumbWrap")) $("vClimaThumbWrap").style.display = "";
+        if($("vClimaThumbEmpty")) $("vClimaThumbEmpty").style.display = "none";
+        if($("vClimaThumbInfo")) $("vClimaThumbInfo").textContent = `Registro de ${latest.data || ''} · Fonte: ${latest.fonteClima || 'WeatherBug'}${latest.preenchidoPorNome ? ` · por ${latest.preenchidoPorNome}` : ''}`;
+      } else {
+        _vClimaPrintUrl = "";
+        if($("vClimaThumbWrap")) $("vClimaThumbWrap").style.display = "none";
+        if($("vClimaThumbEmpty")) $("vClimaThumbEmpty").style.display = "";
+      }
+    } else {
+      _vClimaPrintUrl = "";
+      if($("vClimaResumoBox")) $("vClimaResumoBox").style.display = "none";
+      if($("vClimaThumbWrap")) $("vClimaThumbWrap").style.display = "none";
+      if($("vClimaThumbEmpty")) $("vClimaThumbEmpty").style.display = "";
+    }
+
+    const canvas = $("vChartClima");
+    if(!canvas) return;
+    if(_vChartClima) { try{ _vChartClima.destroy(); }catch(_){} _vChartClima = null; }
+    if(diarios.length < 1){
+      canvas.style.display = "none";
+      if($("vClimaGrafEmpty")) $("vClimaGrafEmpty").style.display = "";
+      return;
+    }
+    canvas.style.display = "";
+    if($("vClimaGrafEmpty")) $("vClimaGrafEmpty").style.display = "none";
+    const ult = diarios.slice(-10);
+    const labels = ult.map(r=>{ try{return new Date(`${r.data}T12:00:00`).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});}catch(_){ return r.data||""; }});
+    const values = ult.map(r=> r.houveProducao === "nao" ? 0 : r.houveProducao === "parcial" ? Math.max(0, Math.min(100, Number(r.percentualProducaoDia)||50)) : 100);
+    const colors = ult.map(r=> r.houveProducao === "nao" ? "rgba(239,68,68,.82)" : r.houveProducao === "parcial" ? "rgba(245,166,35,.85)" : "rgba(16,185,129,.85)");
+
+    Chart.defaults.color = "rgba(255,255,255,0.5)";
+    Chart.defaults.borderColor = "rgba(255,255,255,0.07)";
+    _vChartClima = new Chart(canvas,{
+      type:"bar",
+      data:{ labels, datasets:[{ label:"Produção do dia (%)", data:values, backgroundColor:colors, borderRadius:6, borderWidth:0 }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        scales:{
+          y:{ min:0, max:100, ticks:{ callback:v=> v+"%", color:"rgba(255,255,255,.5)", font:{size:9} }, grid:{ color:"rgba(255,255,255,.06)" } },
+          x:{ ticks:{ color:"rgba(255,255,255,.5)", font:{size:9} }, grid:{ display:false } }
+        },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ callbacks:{ afterLabel:(ctx)=>{ const r=ult[ctx.dataIndex]; const extra=[]; if(r.clima) extra.push(`Clima: ${r.clima}`); if(r.houveRaio === "sim") extra.push(`Raios${r.distanciaRaioKm ? ` (${String(r.distanciaRaioKm).replace('.',',')} km)` : ''}`); if(r.motivoParalisacao) extra.push(r.motivoParalisacao); return extra; } } }
+        }
+      }
+    });
+    Chart.defaults.color = "#666";
+    Chart.defaults.borderColor = "rgba(0,0,0,0.1)";
+  }
+
   async function _vRenderHistorico() {
     try {
       const snap = await getDocs(query(
         collection(db,"obras",_vObraId,"evolHistorico"),
         orderBy("data","asc"), limit(60)
       ));
-      if(snap.empty){ $("vCardHistorico").style.display="none"; return; }
+      const rows=[];
+      if(snap.empty){
+        $("vCardHistorico").style.display="none";
+        _vRenderClimaPainel([]);
+        return;
+      }
       const labels=[], dados=[];
       snap.forEach(d=>{
-        labels.push(new Date(d.data().data+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}));
-        dados.push(parseFloat((d.data().pctGlobal||0).toFixed(1)));
+        const row=d.data()||{};
+        rows.push(row);
+        labels.push(new Date(row.data+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}));
+        dados.push(parseFloat((row.pctGlobal||0).toFixed(1)));
       });
+      _vRenderClimaPainel(rows);
       $("vCardHistorico").style.display="";
       const canvas=$("vChartLinha"); if(!canvas) return;
       if(_vChartL) _vChartL.destroy();
@@ -10049,7 +10170,9 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       });
       Chart.defaults.color = "#666";
       Chart.defaults.borderColor = "rgba(0,0,0,0.1)";
-    }catch(e){}
+    }catch(e){
+      _vRenderClimaPainel([]);
+    }
   }
 
   async function _vCarregarGaleria() {
@@ -10151,16 +10274,30 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
   function vVerFotoAmp(url, unid, svc, data, delta, tipo) {
-    $("vFotoAmpImg").src = url;
     const dtFmt = data ? new Date(data+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}) : "";
     const tipoLabel = tipo==="depois"
       ? `<span style="background:#10b981;color:#fff;padding:1px 8px;border-radius:12px;font-size:.75rem">✅ Depois</span>`
       : `<span style="background:#f5a623;color:#fff;padding:1px 8px;border-radius:12px;font-size:.75rem">📸 Antes</span>`;
-    $("vFotoAmpInfo").innerHTML = `${tipoLabel} <strong>${unid}</strong> · ${svc} · ${dtFmt} · <span style="color:#86efac">+${delta}%</span>`;
-    $("vModalFotoAmp").classList.remove("hidden");
+    if($("evolFotoAmpImg")) $("evolFotoAmpImg").src = url;
+    if($("evolFotoAmpInfo")) $("evolFotoAmpInfo").innerHTML = `${tipoLabel} <strong>${unid}</strong> · ${svc} · ${dtFmt} · <span style="color:#86efac">+${delta}%</span>`;
+    if($("modalEvolFotoAmp")) $("modalEvolFotoAmp").classList.remove("hidden");
+    else window.open(url,"_blank","noopener,noreferrer");
   }
 
-
+  function vVerClimaAmp(){
+    if(!_vClimaPrintUrl){ toast("Nenhum print disponível."); return; }
+    const latest = (_vClimaHist||[])
+      .filter(r => r && (r.diarioClimaPreenchido || r.printMonitorUrl || r.houveProducao || r.clima || r.motivoParalisacao))
+      .sort((a,b)=> String(a.data||"").localeCompare(String(b.data||"")))
+      .slice(-1)[0] || null;
+    if($("evolFotoAmpImg")) $("evolFotoAmpImg").src = _vClimaPrintUrl;
+    if($("evolFotoAmpInfo")){
+      const dt = latest?.data ? new Date(latest.data+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}) : "";
+      $("evolFotoAmpInfo").innerHTML = `<strong>Monitoramento do clima</strong>${dt ? ` · ${dt}` : ''}${latest?.clima ? ` · ${latest.clima}` : ''}${latest?.houveRaio === "sim" ? ` · Raios${latest?.distanciaRaioKm ? ` a ${String(latest.distanciaRaioKm).replace('.',',')} km` : ''}` : ''}`;
+    }
+    if($("modalEvolFotoAmp")) $("modalEvolFotoAmp").classList.remove("hidden");
+    else window.open(_vClimaPrintUrl,"_blank","noopener,noreferrer");
+  }
 
 
   async function vApagarFoto(regId) {
@@ -10271,8 +10408,8 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     evolAbrirModalContrato, evolSalvarContrato, evolAddMarco, evolAnexarArquivo, evolTrocarArquivo, evolDeletarArquivo,
     evolAbrirParaColab,
     evolAbrirGaleria, evolFiltrarGaleria, evolVerFotoAmp, evolGerarRelatorio,
-    evolAbrirDiario, evolSalvarDiario, evolClimaFotoSel, evolCarregarDiarioData, evolAtualizarCamposDiario, evolVerClimaFoto,
-    visitanteInicializar, vFiltrarGaleria, vVerFotoAmp, vFiltrarGrupo,
+    evolAbrirDiario, evolSalvarDiario, evolClimaFotoSel, evolRemoverClimaFoto, evolCarregarDiarioData, evolAtualizarCamposDiario, evolVerClimaFoto,
+    visitanteInicializar, vFiltrarGaleria, vVerFotoAmp, vVerClimaAmp, vFiltrarGrupo,
     vApagarFoto, vTrocarFoto,
 
     // Cadastro de EPIs
@@ -10395,6 +10532,53 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
               <div style="font-weight:600;color:rgba(255,255,255,.8);font-size:.86rem;margin-bottom:10px">📈 Evolução ao Longo do Tempo</div>
               <div style="position:relative;width:100%;height:130px">
                 <canvas id="vChartLinha" style="position:absolute;inset:0"></canvas>
+              </div>
+            </div>
+
+            <!-- 1.5. Clima, produção e impacto no prazo -->
+            <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px" id="vCardClima">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                <div>
+                  <div style="font-weight:600;color:rgba(255,255,255,.86);font-size:.86rem">⛅ Clima e Impacto no Prazo</div>
+                  <div style="font-size:.68rem;color:rgba(255,255,255,.45);margin-top:2px">Paradas por chuva, raios e monitoramento do dia.</div>
+                </div>
+              </div>
+              <div id="vClimaResumoBox" style="display:none;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;margin-bottom:10px">
+                <div style="font-weight:700;color:#fff;font-size:.8rem" id="vClimaResumo">Nenhum diário preenchido.</div>
+                <div style="font-size:.68rem;color:rgba(255,255,255,.5);margin-top:4px" id="vClimaUltimoMeta"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px">
+                <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);border-radius:12px;padding:10px;text-align:center">
+                  <div style="font-size:.62rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700">Produtivos</div>
+                  <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:#10b981" id="vClimaKpiProd">0</div>
+                </div>
+                <div style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.22);border-radius:12px;padding:10px;text-align:center">
+                  <div style="font-size:.62rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700">Parciais</div>
+                  <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:#f5a623" id="vClimaKpiParcial">0</div>
+                </div>
+                <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);border-radius:12px;padding:10px;text-align:center">
+                  <div style="font-size:.62rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700">Paradas clima</div>
+                  <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:#f87171" id="vClimaKpiClima">0</div>
+                </div>
+                <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.22);border-radius:12px;padding:10px;text-align:center">
+                  <div style="font-size:.62rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700">Dias perdidos</div>
+                  <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:#93c5fd" id="vClimaKpiPerdidos">0,0</div>
+                </div>
+              </div>
+              <div style="position:relative;width:100%;height:170px;margin-bottom:10px">
+                <canvas id="vChartClima" style="position:absolute;inset:0"></canvas>
+                <div id="vClimaGrafEmpty" style="display:none;text-align:center;color:rgba(255,255,255,.4);font-size:.76rem;padding-top:68px">Diários do clima aparecerão aqui.</div>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:rgba(255,255,255,.45);text-transform:uppercase;font-weight:700;margin-bottom:8px">Último monitoramento</div>
+                <div id="vClimaThumbWrap" style="display:none">
+                  <div style="position:relative;cursor:zoom-in" onclick="App.vVerClimaAmp()">
+                    <img id="vClimaThumb" src="" alt="Print do monitoramento" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,.12)">
+                    <span style="position:absolute;top:8px;right:8px;background:rgba(15,52,96,.88);color:#fff;font-size:.68rem;font-weight:700;padding:4px 8px;border-radius:999px">🔍 Ampliar</span>
+                  </div>
+                  <div id="vClimaThumbInfo" style="font-size:.7rem;color:rgba(255,255,255,.45);margin-top:8px"></div>
+                </div>
+                <div id="vClimaThumbEmpty" style="font-size:.76rem;color:rgba(255,255,255,.35);padding:8px 0 4px">Nenhum print anexado até o momento.</div>
               </div>
             </div>
 
