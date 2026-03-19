@@ -1979,6 +1979,7 @@
     setMsg("loginMsg","");
     const email=$("loginEmail").value.trim();
     const password=$("loginPass").value;
+    lastMainLoginPassword = password || "";
     const btn=$("btnLogin");
     if(!email){setMsg("loginMsg","Informe o e-mail.");return;}
     if(!password){setMsg("loginMsg","Informe a senha.");return;}
@@ -1996,6 +1997,7 @@
           const prof = snap.docs[0].data();
           if(prof.senha_temp){
             await signInWithEmailAndPassword(auth, email, prof.senha_temp);
+            lastMainLoginPassword = prof.senha_temp || lastMainLoginPassword;
             logouComSenhaTemp = true;
           }
         }
@@ -2016,6 +2018,7 @@
 
   async function logout(){
     await signOut(auth);
+    lastMainLoginPassword = "";
     currentUser = null;
     currentRole = null;
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
@@ -2046,6 +2049,7 @@
         try{ await reauthenticateWithCredential(auth.currentUser, cred); }catch(_){}
       }
       await updatePassword(auth.currentUser, p1);
+      lastMainLoginPassword = p1;
       await updateDoc(doc(db,"usuarios",auth.currentUser.uid),{
         primeiro_acesso: false,
         senha_temp: null,
@@ -2075,6 +2079,7 @@
   }
 
   let currentUser=null, currentRole="USER", currentProfile=null;
+  let lastMainLoginPassword="";
 
   function canEvoluirObra(profile = currentProfile) {
     return !!(profile?.permEvolucao || profile?.evolResponsavel);
@@ -2099,6 +2104,50 @@
   function temAcessoAppUsuario(profile = currentProfile) {
     if(!profile || profile?.role !== "USER") return false;
     return canEvoluirObra(profile) || canAcessarCartaoPonto(profile) || canFazerLancamentos(profile) || canFazerDDS(profile);
+  }
+
+  async function redirecionarUsuarioSomentePonto(user, profile) {
+    const email = user?.email || profile?.email || "";
+    try {
+      pontoUser = null; pontoProfile = null; pontoFotoB64 = null; pontoGPS = null;
+      pontoFaseAtual = null; pontoObraData = null; justPontoId = null;
+      $("pontoGeoAviso")?.classList.add("hidden");
+      $("pontoSemFotoAviso")?.classList.add("hidden");
+      $("pontoStepLogin")?.classList.remove("hidden");
+      $("pontoStepCamera")?.classList.add("hidden");
+      $("pontoStepOk")?.classList.add("hidden");
+      $("pontoStepJustificativa")?.classList.add("hidden");
+      if($("pontoEmail")) $("pontoEmail").value = email;
+      if($("pontoSenha")) $("pontoSenha").value = "";
+      setMsg("pontoLoginMsg", "");
+      showPage("pontoPage");
+
+      if(!navigator.onLine){
+        setMsg("pontoLoginMsg", "📵 Confirme sua senha para registrar o ponto offline.");
+        return true;
+      }
+
+      const candidatos = [...new Set([lastMainLoginPassword, profile?.senha_temp].filter(Boolean))];
+      for (const senha of candidatos) {
+        try {
+          try { await signOut(authAux); } catch(_) {}
+          const cred = await signInWithEmailAndPassword(authAux, email, senha);
+          pontoUser = cred.user;
+          pontoProfile = await loadProfileAux(pontoUser.uid) || profile;
+          await _continuarApoLogin();
+          return true;
+        } catch(_err) {}
+      }
+
+      setMsg("pontoLoginMsg", "Confirme sua senha para registrar o ponto.");
+      return true;
+    } catch(e) {
+      console.warn("redirecionarUsuarioSomentePonto:", e);
+      if($("pontoEmail")) $("pontoEmail").value = email;
+      showPage("pontoPage");
+      setMsg("pontoLoginMsg", "Confirme sua senha para registrar o ponto.");
+      return true;
+    }
   }
 
   function onUserRoleChange() {
@@ -2168,6 +2217,12 @@
       showPage("visitantePage");
       $("vNomeVisitante").textContent = nome;
       await visitanteInicializar(profile?.obra_id||"");
+      return;
+    }
+
+    // ── COLABORADOR SEM PERMISSÕES: vai direto para o ponto ──
+    if(currentRole==="USER" && !temAcessoAppUsuario(profile)){
+      await redirecionarUsuarioSomentePonto(user, profile);
       return;
     }
 
