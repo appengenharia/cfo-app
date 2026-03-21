@@ -386,7 +386,7 @@
 
       <!-- Aviso sem foto cadastrada -->
       <div id="pontoSemFotoAviso" class="hidden" style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;font-size:12px;color:#856404;margin-bottom:8px">
-        ⚠️ Sem foto cadastrada. O reconhecimento facial não será verificado.
+        ⚠️ Sem foto cadastrada no perfil. A foto do ponto continua obrigatória.
       </div>
 
       <!-- Fase do ponto -->
@@ -396,21 +396,13 @@
         <div id="pontoHorarioEsperado" style="font-size:11px;color:#888;margin-top:2px">—</div>
       </div>
 
-      <!-- Câmera com overlay de instrução liveness -->
+      <!-- Câmera com orientação simples para foto do ponto -->
       <div style="position:relative;border-radius:14px;overflow:hidden;background:#000;margin-bottom:10px">
         <video id="pontoVideo" autoplay playsinline muted style="width:100%;border-radius:14px;display:block;transform:scaleX(-1)"></video>
         <canvas id="pontoCanvas" style="display:none"></canvas>
-        <!-- Overlay de instrução -->
         <div id="pontoLivenessOverlay" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px;background:linear-gradient(transparent 50%,rgba(0,0,0,.7))">
-          <div id="pontoLivenessMsg" style="color:#fff;font-size:14px;font-weight:600;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.8)">👁️ Olhe para a câmera e pisque os olhos</div>
-          <!-- Indicador de piscar -->
-          <div id="pontoPiscarIndicador" style="margin-top:6px;display:flex;gap:6px">
-            <div id="blink1" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .2s"></div>
-            <div id="blink2" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .2s"></div>
-            <div id="blink3" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .2s"></div>
-          </div>
+          <div id="pontoLivenessMsg" style="color:#fff;font-size:14px;font-weight:600;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.8)">📸 Posicione o rosto em boa distância e toque em Bater Foto</div>
         </div>
-        <!-- Preview da foto capturada -->
         <div id="pontoFotoPreview" class="hidden" style="position:absolute;inset:0">
           <img id="pontoFotoImg" style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)" alt="Foto capturada">
           <button onclick="App.retirarFoto()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">✕</button>
@@ -425,14 +417,13 @@
         </div>
         <div class="ponto-status-item" id="statusLiveness">
           <span class="ponto-status-icon">⏳</span>
-          <span class="ponto-status-txt">Verificação de presença (piscar olhos)</span>
-        </div>
-        <div class="ponto-status-item" id="statusFacial">
-          <span class="ponto-status-icon">⏳</span>
-          <span class="ponto-status-txt">Reconhecimento facial</span>
+          <span class="ponto-status-txt">Foto do ponto ainda não capturada</span>
         </div>
       </div>
 
+      <button id="btnTirarFotoPonto" class="btn btn-outline full" onclick="App.tirarFoto()" style="padding:14px;border-color:#0f3460;color:#0f3460;margin-bottom:8px">
+        📸 Bater Foto
+      </button>
       <button id="btnRegistrarPonto" class="btn btn-primary full" onclick="App.confirmarPonto()" disabled style="padding:14px">
         ✅ Confirmar Ponto
       </button>
@@ -2117,6 +2108,7 @@
       $("pontoStepCamera")?.classList.add("hidden");
       $("pontoStepOk")?.classList.add("hidden");
       $("pontoStepJustificativa")?.classList.add("hidden");
+      if($("btnTirarFotoPonto")) $("btnTirarFotoPonto").textContent = "📸 Bater Foto";
       if($("pontoEmail")) $("pontoEmail").value = email;
       if($("pontoSenha")) $("pontoSenha").value = "";
       setMsg("pontoLoginMsg", "");
@@ -5726,14 +5718,15 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
   let correcaoDia    = null;
   let justPontoId    = null;
   let pontoProfile   = null;
-  let livenessOk     = false;
-  let facialOk       = false;
+  let livenessOk     = true;
+  let facialOk       = true;
   let _evolAtividades = [];
   let _evolRegFotoB64 = null;
   let livenessDetector = null;
   let blinkCount     = 0;
   let eyeWasClosed   = false;
-  const BLINKS_NEEDED = 2;
+  const BLINKS_NEEDED = 0;
+  let pontoAutoLogoutTimer = null;
 
   // ── Utilitário: atualiza item de status visual ──
   function setStatusItem(id, state, txt) {
@@ -5748,9 +5741,10 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     try {
       pontoUser=null; pontoStream=null; pontoFotoB64=null; pontoGPS=null;
       pontoFaseAtual=null; pontoObraData=null; justPontoId=null;
-      pontoProfile=null; livenessOk=false; facialOk=false; blinkCount=0; eyeWasClosed=false;
+      pontoProfile=null; livenessOk=true; facialOk=true; blinkCount=0; eyeWasClosed=false;
       window._geoBlocked = false;
       if(livenessDetector){ clearInterval(livenessDetector); livenessDetector=null; }
+      if(pontoAutoLogoutTimer){ clearTimeout(pontoAutoLogoutTimer); pontoAutoLogoutTimer=null; }
       const pontoEmailEl = $("pontoEmail");
       const pontoSenhaEl = $("pontoSenha");
       if(pontoEmailEl) pontoEmailEl.value="";
@@ -5771,6 +5765,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
   function voltarLogin() {
     pararCamera();
     if(livenessDetector){ clearInterval(livenessDetector); livenessDetector=null; }
+    if(pontoAutoLogoutTimer){ clearTimeout(pontoAutoLogoutTimer); pontoAutoLogoutTimer=null; }
     signOut(authAux).catch(()=>{});
     // Garante que sideNav também some
     $("sideNav")?.classList.add("hidden");
@@ -5924,18 +5919,13 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("pontoStepLogin").classList.add("hidden");
     $("pontoStepCamera").classList.remove("hidden");
 
+    livenessOk = true;
+    facialOk = true;
     setStatusItem("statusGps","loading","📍 Obtendo localização...");
-    setStatusItem("statusLiveness","loading","👁️ Pisque os olhos "+BLINKS_NEEDED+"x para verificar presença");
-    setStatusItem("statusFacial","loading", pontoProfile.fotoUrl ? "🔍 Aguardando foto..." : "⚪ Sem foto cadastrada (verificação dispensada)");
-
-    if(!pontoProfile.fotoUrl) {
-      facialOk = true;
-      setStatusItem("statusFacial","warn","⚪ Sem foto cadastrada — verificação dispensada");
-    }
+    setStatusItem("statusLiveness","loading","📸 Tire a foto do ponto para continuar");
 
     await iniciarCamera();
     obterGPS();
-    iniciarLiveness();
     setMsg("pontoLoginMsg","");
   }
 
@@ -6045,10 +6035,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       $("pontoFotoPreview").classList.add("hidden");
     } catch(e) {
       setMsg("pontoCameraMsg","⚠️ Câmera não disponível: "+e.message);
-      // Sem câmera: dispensa liveness e facial
       livenessOk = true; facialOk = true;
       setStatusItem("statusLiveness","warn","⚠️ Câmera indisponível");
-      setStatusItem("statusFacial","warn","⚠️ Câmera indisponível");
       verificarTudoPronto();
     }
   }
@@ -6139,13 +6127,15 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
   function tirarFoto() {
     const video  = $("pontoVideo");
     const canvas = $("pontoCanvas");
-    if(!video || !canvas || video.readyState < 2) return;
+    if(!video || !canvas || video.readyState < 2) {
+      setMsg("pontoCameraMsg","⚠️ Aguarde a câmera carregar e tente novamente.");
+      return;
+    }
 
     const w = video.videoWidth || 640;
     const h = video.videoHeight || 480;
     canvas.width = w; canvas.height = h;
     const ctx = canvas.getContext("2d");
-    // Captura com espelho (mesma orientação que o usuário vê)
     ctx.save(); ctx.scale(-1,1); ctx.drawImage(video,-w,0,w,h); ctx.restore();
 
     pontoFotoB64 = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
@@ -6153,14 +6143,10 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("pontoVideo").style.display = "none";
     $("pontoLivenessOverlay").style.display = "none";
     $("pontoFotoPreview").classList.remove("hidden");
-
-    // Se tem foto cadastrada, faz reconhecimento facial
-    if(pontoProfile?.fotoUrl) {
-      verificarFacial();
-    } else {
-      facialOk = true;
-      verificarTudoPronto();
-    }
+    setStatusItem("statusLiveness","ok","✅ Foto do ponto capturada");
+    const btnFoto = $("btnTirarFotoPonto");
+    if(btnFoto) btnFoto.textContent = "🔄 Tirar outra foto";
+    verificarTudoPronto();
   }
 
   function retirarFoto() {
@@ -6169,92 +6155,41 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("pontoFotoPreview").classList.add("hidden");
     $("pontoLivenessOverlay").style.display = "";
     if($("pontoVideo")) $("pontoVideo").style.display = "block";
-    facialOk = pontoProfile?.fotoUrl ? false : true;
+    const btnFoto = $("btnTirarFotoPonto");
+    if(btnFoto) btnFoto.textContent = "📸 Bater Foto";
+    setStatusItem("statusLiveness","loading","📸 Tire a foto do ponto para continuar");
     $("btnRegistrarPonto").disabled = true;
-    // Reinicia liveness
-    if(!livenessOk) iniciarLiveness();
-    if(pontoProfile?.fotoUrl) {
-      setStatusItem("statusFacial","loading","🔍 Aguardando nova foto...");
-    }
+    setMsg("pontoCameraMsg","📸 Tire uma nova foto para confirmar o ponto.");
   }
 
-  // ── RECONHECIMENTO FACIAL VIA API CLAUDE ──
+  // ── RECONHECIMENTO FACIAL REMOVIDO PARA FLUXO SIMPLES ──
+
   async function verificarFacial() {
-    setStatusItem("statusFacial","loading","🔍 Verificando identidade...");
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 200,
-          messages: [{
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Você é um sistema de verificação de identidade. Compare as duas imagens abaixo:\n- Imagem 1: foto cadastrada do colaborador\n- Imagem 2: foto capturada agora para bater ponto\n\nResponda APENAS com JSON no formato: {\"match\": true/false, \"confianca\": \"alta/media/baixa\", \"motivo\": \"breve explicação\"}\n\nSeja criterioso: só confirme match se for claramente a mesma pessoa. Se a qualidade da imagem for baixa, indique na confiança."
-              },
-              {
-                type: "image",
-                source: { type: "url", url: pontoProfile.fotoUrl }
-              },
-              {
-                type: "image",
-                source: { type: "base64", media_type: "image/jpeg", data: pontoFotoB64 }
-              }
-            ]
-          }]
-        })
-      });
-
-      const data = await response.json();
-      const txt = data.content?.[0]?.text || "{}";
-      let resultado;
-      try {
-        // Remove possíveis backticks
-        resultado = JSON.parse(txt.replace(/```json|```/g,"").trim());
-      } catch(_) {
-        resultado = { match: false, confianca:"baixa", motivo:"Erro ao processar resposta" };
-      }
-
-      if(resultado.match) {
-        facialOk = true;
-        setStatusItem("statusFacial","ok",`✅ Identidade confirmada (confiança: ${resultado.confianca})`);
-      } else {
-        facialOk = false;
-        setStatusItem("statusFacial","fail",`❌ Não reconhecido: ${resultado.motivo}`);
-        setMsg("pontoCameraMsg","❌ Reconhecimento facial falhou. Tente novamente com melhor iluminação.");
-      }
-    } catch(e) {
-      console.warn("Erro no reconhecimento facial:", e);
-      // Em caso de erro de rede/API: registra aviso mas NÃO aprova automaticamente
-      // O ponto será salvo com anomalia "facial_indisponivel" para auditoria
-      facialOk = true;  // permite continuar para não bloquear trabalho
-      window._facialAnomaliaRegistrar = true;  // sinaliza para adicionar anomalia
-      setStatusItem("statusFacial","warn","⚠️ Verificação facial indisponível — ponto registrado com aviso de auditoria");
-    }
+    facialOk = true;
     verificarTudoPronto();
   }
 
-  // ── Verifica se todos os checkes passaram e habilita o botão ──
+  // ── Verifica se já é possível confirmar o ponto ──
   function verificarTudoPronto() {
     const btn = $("btnRegistrarPonto");
     if(!btn) return;
-    // Não habilita se bloqueado por geofencing
-    if(window._geoBlocked) return;
-    const tudo = livenessOk && facialOk && pontoFotoB64;
+    if(window._geoBlocked) {
+      btn.disabled = true;
+      return;
+    }
+    const tudo = !!pontoFotoB64;
     btn.disabled = !tudo;
     if(tudo) {
       btn.textContent = "✅ Confirmar Ponto";
-      setMsg("pontoCameraMsg","✅ Todas as verificações concluídas. Clique em Confirmar Ponto.");
+      setMsg("pontoCameraMsg","✅ Foto capturada. Clique em Confirmar Ponto.");
+    } else {
+      setMsg("pontoCameraMsg","📸 Tire a foto para liberar a confirmação do ponto.");
     }
   }
 
   // ── CONFIRMAR E SALVAR PONTO ──
   async function confirmarPonto() {
-    if(!livenessOk) { setMsg("pontoCameraMsg","⚠️ Pisque os olhos para confirmar presença."); return; }
-    if(!facialOk)   { setMsg("pontoCameraMsg","⚠️ Reconhecimento facial não confirmado."); return; }
+    if(!pontoFotoB64) { setMsg("pontoCameraMsg","⚠️ Tire a foto antes de confirmar o ponto."); return; }
 
     const btn = $("btnRegistrarPonto");
     btn.disabled = true;
@@ -6314,8 +6249,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
           horaExtra: "0h00",
           status:    statusFinal,
           anomalias: anomaliasBase,
-          livenessVerificado: true,
-          facialVerificado:   !!pontoProfile.fotoUrl,
+          livenessVerificado: false,
+          facialVerificado:   false,
           _fase:     pontoFaseAtual,  // usado pela sync para merge
           dataHora:  agora.toISOString()
         };
@@ -6344,8 +6279,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
           horaExtra:        "0h00",
           status:           statusFinal,
           anomalias:        anomaliasBase,
-          livenessVerificado: true,
-          facialVerificado:   !!pontoProfile.fotoUrl,
+          livenessVerificado: false,
+          facialVerificado:   false,
           criadoEm:         serverTimestamp()
         });
       } else {
@@ -6356,7 +6291,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         upd["gps"+capitalize(pontoFaseAtual)]    = pontoGPS;
         if(foraDoRaio) upd.foraDoRaio = true;
         if(distanciaM !== null) upd.distanciaM = distanciaM;
-        if(isAnomalia || foraDoRaio) {
+        if(anomaliaEntrada || foraDoRaio || anomaliasBase.length) {
           const anoAtual = snap.docs[0].data().anomalias || [];
           upd.anomalias  = [...new Set([...anoAtual, ...anomaliasBase])];
           upd.status     = "anomalia";
@@ -6387,10 +6322,18 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       <div>👤 <strong>${pontoProfile.nome||pontoUser.email}</strong></div>
       <div>🏗️ ${pontoObraData?.nome||"Sem obra"}</div>
       <div style="margin-top:4px">${gpsInfo}</div>
-      <div style="margin-top:4px">✅ Liveness verificado &nbsp;·&nbsp; ${pontoProfile.fotoUrl?"✅ Facial verificado":"⚪ Facial dispensado"}</div>
+      <div style="margin-top:4px">📸 Foto do ponto registrada com sucesso</div>
+      <div style="margin-top:8px;background:#fef3c7;border-radius:6px;padding:6px 10px;font-size:.8rem;color:#92400e">🔒 Esta sessão será encerrada automaticamente em 60 segundos.</div>
       ${obs ? `<div style="margin-top:8px;background:#e0f2fe;border-radius:6px;padding:6px 10px;font-size:.8rem;color:#075985">${obs}</div>` : ""}
     `;
     $("pontoStepOk").classList.remove("hidden");
+    if(pontoAutoLogoutTimer) clearTimeout(pontoAutoLogoutTimer);
+    pontoAutoLogoutTimer = setTimeout(async () => {
+      try { await signOut(authAux); } catch(_) {}
+      try { await signOut(auth); } catch(_) {}
+      try { lastMainLoginPassword = ""; } catch(_) {}
+      irParaPonto();
+    }, 60000);
   }
 
   function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
@@ -6486,7 +6429,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         const cr=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`,{method:"POST",body:fd});
         const cj=await cr.json(); docUrl=cj.secure_url||"";
       }
-      await updateDoc(doc(db,"pontos",justPontoId),{
+      await updateDoc(doc(dbAux,"pontos",justPontoId),{
         justificativa:texto, justificativaDoc:docUrl,
         justificativaEnviada:true, justificativaEm:serverTimestamp()
       });
