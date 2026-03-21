@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
@@ -889,14 +890,6 @@
           <label>Nome da Obra</label>
           <input id="obraName" type="text" placeholder="Ex: Residencial Parque Verde">
 
-          <label style="margin-top:10px">Logo da empresa <span style="font-size:.75rem;color:var(--muted);font-weight:400">(aparece no cabeçalho do DDS e no topo após login)</span></label>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <input type="file" id="obraLogoInput" accept="image/*" onchange="App.obraLogoPreview(this)" style="flex:1">
-            <div id="obraLogoPreviewWrap" style="display:none">
-              <img id="obraLogoPreviewImg" src="" alt="Logo" style="height:48px;max-width:120px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:4px;background:#fff">
-            </div>
-          </div>
-          <input type="hidden" id="obraLogoUrl">
 
           <label>Descrição (opcional)</label>
           <input id="obraDesc" type="text" placeholder="Ex: Bloco A — 12 apartamentos">
@@ -1063,6 +1056,17 @@
           <div id="empEditMode" class="hidden">
             <div class="rh-field-grid">
               <div class="full"><label>Razão Social / Nome da Empresa *</label><input id="empNome" placeholder="Ex: JCS Construções e Serviços Ltda"></div>
+              <div class="full" style="margin-bottom:4px">
+                <label>Logo da empresa <span style="font-size:.75rem;color:var(--muted);font-weight:400">(usada no DDS, topbar e documentos)</span></label>
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                  <input type="file" id="empLogoInput" accept="image/*" onchange="App.empLogoPreview(this)" style="flex:1;margin:0">
+                  <div id="empLogoPreviewWrap" style="display:none;align-items:center;gap:8px">
+                    <img id="empLogoPreviewImg" src="" alt="Logo" style="height:52px;max-width:140px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:4px;background:#fff">
+                    <button type="button" onclick="App.empLogoRemover()" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:1rem">🗑️</button>
+                  </div>
+                </div>
+                <input type="hidden" id="empLogoUrl">
+              </div>
               <div><label>CNPJ / CEI *</label><input id="empCnpj" placeholder="00.000.000/0000-00" oninput="App.rhMaskCNPJ(this)"></div>
               <div><label>Telefone da Empresa</label><input id="empTel" placeholder="(00) 00000-0000"></div>
               <div class="full"><label>Endereço (Logradouro)</label><input id="empRua" placeholder="Rua, Avenida..."></div>
@@ -2537,17 +2541,14 @@
     $("pillUser").textContent=nome;
     $("pillUser").classList.remove("hidden");
     $("btnLogout").classList.remove("hidden");
-    // Logo da obra na topbar
+    // Logo da empresa na topbar (de configuracoes/empresa)
     try{
-      const obraId = profile?.obra_id || (profile?.obras||[])[0];
-      if(obraId){
-        const oSnap = await getDoc(doc(db,"obras",obraId));
-        if(oSnap.exists() && oSnap.data().logoUrl){
-          const logoEl = $("topbarObraLogo");
-          const logoWrap = $("topbarObraLogoWrap");
-          if(logoEl){ logoEl.src = oSnap.data().logoUrl; }
-          if(logoWrap){ logoWrap.classList.remove("hidden"); logoWrap.style.display="flex"; }
-        }
+      const empSnap = await getDoc(doc(db,"configuracoes","empresa"));
+      if(empSnap.exists() && empSnap.data().logoUrl){
+        const logoEl   = $("topbarObraLogo");
+        const logoWrap = $("topbarObraLogoWrap");
+        if(logoEl)   logoEl.src = empSnap.data().logoUrl;
+        if(logoWrap){ logoWrap.classList.remove("hidden"); logoWrap.style.display="flex"; }
       }
     }catch(_){}
     const av = $("topbarAvatar");
@@ -2691,7 +2692,6 @@
     const lat     = parseFloat($("obraLat").value) || null;
     const lng     = parseFloat($("obraLng").value) || null;
     const raio    = parseInt($("obraRaio").value) || 100;
-    const logoUrlExist = $("obraLogoUrl")?.value || "";
     const travar  = $("obraTravarPonto").checked;
     const btn     = $("btnSaveObra");
     const editId  = $("obraEditId")?.value||"";
@@ -2716,23 +2716,10 @@
       } else {
         // ── CRIAR nova obra ──
         const id = "OBRA_"+Date.now();
-        // Upload do logo se houver novo arquivo selecionado
-        let logoUrl = logoUrlExist;
-        const loInput = $("obraLogoInput");
-        if(loInput?.files?.[0]){
-          const fd=new FormData();
-          fd.append("file",loInput.files[0]);
-          fd.append("upload_preset",CLOUDINARY_PRESET);
-          fd.append("folder","obras");
-          const cr=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,{method:"POST",body:fd});
-          const cj=await cr.json().catch(()=>({}));
-          if(cj.secure_url) logoUrl=cj.secure_url;
-        }
         await setDoc(doc(db,"obras",id),{
           id, nome, descricao: desc, ativa: true,
           endereco, rua, numero: num, bairro, cidade, estado,
           lat, lng, raio, travarPonto: travar,
-          logoUrl: logoUrl||null,
           criadoPor: currentUser.uid,
           criadoEm: serverTimestamp()
         });
@@ -2745,13 +2732,6 @@
       $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length;
     } catch(e){ setMsg("obraMsg","Erro: "+e.message); }
     finally{ btn.disabled=false; btn.textContent= $("obraEditId")?.value ? "💾 Atualizar Obra" : "💾 Salvar Obra"; }
-  }
-
-  function obraLogoPreview(input){
-    const file = input?.files?.[0]; if(!file) return;
-    const url = URL.createObjectURL(file);
-    if($("obraLogoPreviewImg"))  $("obraLogoPreviewImg").src = url;
-    if($("obraLogoPreviewWrap")) $("obraLogoPreviewWrap").style.display = "";
   }
 
   function _obraLimparForm(){
@@ -2788,14 +2768,7 @@
       $("obraLng").value      = o.lng||"";
       $("obraRaio").value     = o.raio||100;
       $("obraTravarPonto").checked = o.travarPonto||false;
-      // Logo
-      if($("obraLogoUrl")) $("obraLogoUrl").value = o.logoUrl||"";
-      if(o.logoUrl && $("obraLogoPreviewImg")){
-        $("obraLogoPreviewImg").src = o.logoUrl;
-        $("obraLogoPreviewWrap").style.display="";
-      } else if($("obraLogoPreviewWrap")){
-        $("obraLogoPreviewWrap").style.display="none";
-      }
+
 
       // Atualizar visual do formulário
       $("obraFormTitulo").textContent    = "✏️ Editar Obra";
@@ -2971,10 +2944,10 @@
     setMsg("userMsg","");
     const nome=$("userNome").value.trim(), email=$("userEmail").value.trim();
     const role=$("userRole").value, obra=$("userObra").value;
-    const permEvolucao = !!("userPermEvolucao") && !!$("userPermEvolucao")?.checked;
-    const permPonto    = !!("userPermPonto")    && !!$("userPermPonto")?.checked;
-    const permLanc     = !!("userPermLanc")     && !!$("userPermLanc")?.checked;
-    const permDDS      = !!("userPermDDS")      && !!$("userPermDDS")?.checked;
+    const permEvolucao = !!$("userPermEvolucao")?.checked;
+    const permPonto    = !!$("userPermPonto")?.checked;
+    const permLanc     = !!$("userPermLanc")?.checked;
+    const permDDS      = !!$("userPermDDS")?.checked;
     const funcao       = $("userFuncao")?.value.trim() || "";
     const btn=$("btnSaveUser");
     if(!nome){setMsg("userMsg","Informe o nome.");return;}
@@ -9150,6 +9123,12 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   function _empRenderView(emp) {
     const v = (val, fallback="—") => val || fallback;
     const enderecoEmp = [emp.rua, emp.num, emp.bairro, emp.cidade ? emp.cidade+(emp.uf?"/"+emp.uf:"") : ""].filter(Boolean).join(", ");
+    // Mostrar logo na view
+    if(emp.logoUrl){
+      const lw=$("empLogoPreviewWrap");
+      if($("empLogoPreviewImg")) $("empLogoPreviewImg").src=emp.logoUrl;
+      if(lw){ lw.style.display="flex"; }
+    }
     const el = $("empViewConteudo"); if(!el) return;
     if(!emp.nome) {
       el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">
@@ -9175,6 +9154,13 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const set = (id, val) => { const el=$(id); if(el) el.value=val||""; };
     set("empNome",       emp.nome);
     set("empCnpj",       emp.cnpj);
+    if($("empLogoUrl")) $("empLogoUrl").value = emp.logoUrl||"";
+    if(emp.logoUrl){
+      if($("empLogoPreviewImg"))  $("empLogoPreviewImg").src = emp.logoUrl;
+      if($("empLogoPreviewWrap")){ $("empLogoPreviewWrap").style.display="flex"; }
+    } else {
+      if($("empLogoPreviewWrap")) $("empLogoPreviewWrap").style.display="none";
+    }
     set("empTel",        emp.tel);
     set("empRua",        emp.rua);
     set("empNum",        emp.num);
@@ -9218,6 +9204,21 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     $("empMsg").textContent = "";
   }
 
+  function empLogoPreview(input){
+    const file = input?.files?.[0]; if(!file) return;
+    const url = URL.createObjectURL(file);
+    if($("empLogoPreviewImg"))  $("empLogoPreviewImg").src = url;
+    if($("empLogoPreviewWrap")){ $("empLogoPreviewWrap").style.display="flex"; }
+  }
+
+  function empLogoRemover(){
+    if($("empLogoInput"))       $("empLogoInput").value = "";
+    if($("empLogoUrl"))         $("empLogoUrl").value = "";
+    if($("empLogoPreviewImg"))  $("empLogoPreviewImg").src = "";
+    if($("empLogoPreviewWrap")) $("empLogoPreviewWrap").style.display = "none";
+    if(_empresaCache) _empresaCache.logoUrl = "";
+  }
+
   async function salvarEmpresa() {
     const get = id => $(id)?.value.trim()||"";
     const emp = {
@@ -9237,6 +9238,18 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       atualizadoEm: serverTimestamp(),
     };
     if(!emp.nome || !emp.cnpj) { setMsg("empMsg","⚠️ Informe nome e CNPJ da empresa."); return; }
+    const loInput2 = $("empLogoInput");
+    const loExist  = $("empLogoUrl")?.value || _empresaCache?.logoUrl || "";
+    emp.logoUrl = loExist;
+    if(loInput2?.files?.[0]){
+      const fd=new FormData(); fd.append("file",loInput2.files[0]);
+      fd.append("upload_preset",CLOUDINARY_PRESET); fd.append("folder","empresa");
+      try{
+        const cr=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,{method:"POST",body:fd});
+        const cj=await cr.json().catch(()=>({}));
+        if(cj.secure_url) emp.logoUrl=cj.secure_url;
+      }catch(_){}
+    }
     try {
       await setDoc(doc(db,"configuracoes","empresa"), emp);
       _empresaCache = emp;
@@ -11224,10 +11237,10 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const d = snap.data();
 
     // Dados da empresa contratada
-    let empNome = ""; let empCnpj = "";
+    let empNome = ""; let empCnpj = ""; let empLogoUrl = "";
     try{
       const empSnap = await getDoc(doc(db,"configuracoes","empresa"));
-      if(empSnap.exists()){ empNome = empSnap.data().nome||""; empCnpj = empSnap.data().cnpj||""; }
+      if(empSnap.exists()){ empNome = empSnap.data().nome||""; empCnpj = empSnap.data().cnpj||""; empLogoUrl = empSnap.data().logoUrl||""; }
     }catch(_){}
 
     const { jsPDF } = window.jspdf;
@@ -11616,7 +11629,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     // Navegação
     goTab, adminTab,
     // Obras
-    saveObra, loadObras, toggleObra, deleteObra, editarObra, obraLogoPreview, cancelarEditObra,
+    saveObra, loadObras, toggleObra, deleteObra, editarObra, cancelarEditObra,
     geocodificarObra, editarGeofencing, geocodificarModal, salvarGeofencing,
     // Colaboradores
     saveUser, loadUsers, filterUsers, toggleUser, abrirResetSenha, confirmarResetSenha,
@@ -11668,6 +11681,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     rhTogglePagamento, rhTogglePixTipo,
     // Empresa
     salvarEmpresa, carregarEmpresa, empresaEditar, empresaCancelar,
+    empLogoPreview, empLogoRemover,
     // RH — autocomplete
     rhBuscarColabPorNome, rhSelecionarColab,
     // Exames PCMSO — upload individual e alertas
