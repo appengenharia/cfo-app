@@ -271,6 +271,21 @@
   .evol-dash-grid{display:grid;grid-template-columns:minmax(260px,300px) minmax(0,1fr) !important;justify-content:center;align-items:start}
   @media(max-width:900px){.evol-dashboard-inner{width:100%}.evol-dash-grid{grid-template-columns:1fr !important;gap:18px !important}}
   @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}.evolGrafGrid{grid-template-columns:1fr!important}}
+
+  /* ── DDS Acordeão ── */
+  .dds-accordion{background:var(--card);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .18s}
+  .dds-accordion.open{box-shadow:0 4px 24px rgba(15,52,96,.13)}
+  .dds-acc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:background .15s}
+  .dds-acc-header:hover{background:#f8f9fc}
+  .dds-accordion.open .dds-acc-header{background:#f0f7ff;border-bottom:1.5px solid #dbeafe}
+  .dds-acc-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-size:.8rem;font-weight:800;flex-shrink:0}
+  .dds-accordion.open .dds-acc-num{background:var(--accent)}
+  .dds-acc-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.93rem;color:var(--text)}
+  .dds-acc-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+  .dds-acc-arrow{font-size:1rem;color:var(--muted);transition:transform .2s;flex-shrink:0}
+  .dds-accordion.open .dds-acc-arrow{transform:rotate(180deg);color:var(--brand)}
+  .dds-acc-body{display:none;padding:16px 18px}
+  .dds-accordion.open .dds-acc-body{display:block;animation:fadeIn .18s ease}
   /* ── DDS — Diálogo Diário de Segurança ── */
   .dds-tema-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:border-color .18s}
   .dds-tema-card:hover{border-color:var(--brand)}
@@ -300,6 +315,9 @@
 
 <div class="topbar hidden" id="topbar">
   <div class="topbar-brand"><span class="dot"></span>GO — Gestão de Obras</div>
+    <div id="topbarObraLogoWrap" class="hidden" style="display:flex;align-items:center;margin-left:8px">
+      <img id="topbarObraLogo" src="" alt="Logo" style="height:30px;max-width:90px;object-fit:contain;opacity:.92">
+    </div>
   <div class="topbar-right">
     <img id="topbarAvatar" class="hidden" alt="Foto do colaborador" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.28);box-shadow:0 2px 10px rgba(0,0,0,.18)">
     <div id="pillUser" class="pill hidden"></div>
@@ -871,6 +889,15 @@
           <label>Nome da Obra</label>
           <input id="obraName" type="text" placeholder="Ex: Residencial Parque Verde">
 
+          <label style="margin-top:10px">Logo da empresa <span style="font-size:.75rem;color:var(--muted);font-weight:400">(aparece no cabeçalho do DDS e no topo após login)</span></label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="file" id="obraLogoInput" accept="image/*" onchange="App.obraLogoPreview(this)" style="flex:1">
+            <div id="obraLogoPreviewWrap" style="display:none">
+              <img id="obraLogoPreviewImg" src="" alt="Logo" style="height:48px;max-width:120px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:4px;background:#fff">
+            </div>
+          </div>
+          <input type="hidden" id="obraLogoUrl">
+
           <label>Descrição (opcional)</label>
           <input id="obraDesc" type="text" placeholder="Ex: Bloco A — 12 apartamentos">
 
@@ -972,6 +999,8 @@
           <select id="userObra">
             <option value="">— Sem alocação por enquanto —</option>
           </select>
+          <label style="margin-top:10px">Função / Cargo</label>
+          <input id="userFuncao" type="text" placeholder="Ex: Pedreiro, Eletricista, Encarregado...">
           <div id="userPermsWrap" style="margin-top:10px;background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 14px">
             <div style="font-size:.78rem;font-weight:700;color:var(--brand);margin-bottom:8px">Permissões do colaborador</div>
             <label style="margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text)"><input type="checkbox" id="userPermEvolucao" style="width:18px;height:18px;accent-color:var(--brand);flex-shrink:0"><span>📈 Evoluir obra</span></label>
@@ -1459,153 +1488,179 @@
        TAB: DDS — DIÁLOGO DIÁRIO DE SEGURANÇA
        ══════════════════════════════════════════════════════════ -->
   <div class="tab-panel" id="tab-dds">
-    <div style="max-width:1100px;margin:0 auto">
+    <div style="max-width:720px;margin:0 auto">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+      <!-- ── HEADER ── -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
         <div>
-          <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.35rem">🦺 DDS — Diálogo Diário de Segurança</h1>
-          <p style="font-size:.82rem;color:var(--muted);margin-top:2px">Registro semanal com temas, participantes e assinaturas (fotos do ponto)</p>
+          <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem">🦺 DDS — Diálogo Diário de Segurança</h1>
+          <p style="font-size:.8rem;color:var(--muted);margin-top:2px">Registro semanal com temas, participantes e assinaturas</p>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="ddsFiltroObra" onchange="App.ddsTrocarObra()" style="margin:0;font-size:.84rem;padding:8px 12px;max-width:240px">
+      </div>
+
+      <!-- ── BARRA DE CONTROLE: obra + semana + status ── -->
+      <div class="card" style="padding:14px 18px;margin-bottom:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <select id="ddsFiltroObra" onchange="App.ddsTrocarObra()" style="margin:0;font-size:.85rem;flex:1;min-width:160px">
             <option value="">— Selecione a obra —</option>
           </select>
-          <button class="btn btn-primary sm" id="btnDdsSalvar" onclick="App.ddsSalvarSemana()" style="display:none">💾 Salvar DDS</button>
+          <input type="week" id="ddsSemana" onchange="App.ddsCarregarSemana()" style="margin:0;font-size:.85rem;flex:1;min-width:160px">
+          <div id="ddsStatusBadge" class="dds-status-badge rascunho" style="display:none">📝 Rascunho</div>
+          <button class="btn btn-primary sm" id="btnDdsSalvar" onclick="App.ddsSalvarSemana()" style="display:none;white-space:nowrap">💾 Salvar DDS</button>
         </div>
       </div>
 
-      <!-- Sem obra selecionada -->
-      <div id="ddsVazio" class="card" style="text-align:center;padding:48px 24px">
-        <div style="font-size:3rem;margin-bottom:12px">🦺</div>
-        <h3 style="font-family:'Syne',sans-serif;color:var(--brand);margin-bottom:8px">Selecione uma obra</h3>
-        <p style="color:var(--muted);font-size:.88rem">Escolha a obra para registrar o DDS da semana</p>
+      <!-- ── VAZIO ── -->
+      <div id="ddsVazio" style="text-align:center;padding:48px 24px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)">
+        <div style="font-size:3rem;margin-bottom:10px">🦺</div>
+        <h3 style="font-family:'Syne',sans-serif;color:var(--brand);margin-bottom:6px">Selecione uma obra</h3>
+        <p style="color:var(--muted);font-size:.86rem">Escolha a obra acima para registrar o DDS da semana</p>
       </div>
 
-      <!-- Painel principal -->
-      <div id="ddsPainel" style="display:none">
+      <!-- ── PAINEL ACORDEÃO ── -->
+      <div id="ddsPainel" style="display:none;display:flex;flex-direction:column;gap:8px">
 
-        <!-- Navegação de semana -->
-        <div class="card" style="padding:16px 20px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <div class="dds-week-nav">
-              <label style="margin:0;font-weight:600;font-size:.85rem;color:var(--text)">Semana:</label>
-              <input type="week" id="ddsSemana" onchange="App.ddsCarregarSemana()" style="margin:0">
+        <!-- ─── SEÇÃO 1: Condutor ─── -->
+        <div class="dds-accordion" id="ddsAcc1">
+          <div class="dds-acc-header" onclick="App._ddsToggleAcc('ddsAcc1')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="dds-acc-num">1</span>
+              <div>
+                <div class="dds-acc-title">👤 Condutor do DDS</div>
+                <div class="dds-acc-sub" id="ddsAccSub1">Defina quem conduz a reunião</div>
+              </div>
             </div>
-            <div id="ddsStatusBadge" class="dds-status-badge rascunho" style="display:none">📝 Rascunho</div>
-            <div style="flex:1"></div>
-            <button class="btn btn-outline sm" onclick="App.ddsSincronizarParticipantes()" id="btnDdsSincronizar" style="display:none">🔄 Sincronizar participantes do ponto</button>
+            <span class="dds-acc-arrow">▾</span>
           </div>
-        </div>
-
-        <!-- Grid 2 colunas: esquerda configuração, direita temas -->
-        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start">
-
-          <!-- ── COLUNA ESQUERDA: configuração ── -->
-          <div style="display:flex;flex-direction:column;gap:14px">
-
-            <!-- Condutor -->
-            <div class="card" style="padding:16px">
-              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:12px">👤 Condutor do DDS</div>
-              <label>Quem conduz</label>
-              <select id="ddsTipoCondutor" onchange="App.ddsAtualizarCondutor()" style="margin-bottom:8px">
-                <option value="responsavel">Responsável da obra</option>
-                <option value="seguranca">Técnico de Segurança</option>
-                <option value="outro">Outro</option>
-              </select>
+          <div class="dds-acc-body" id="ddsAccBody1">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="grid-column:1/-1">
+                <label>Quem conduz</label>
+                <select id="ddsTipoCondutor" onchange="App.ddsAtualizarCondutor()">
+                  <option value="responsavel">Responsável da obra</option>
+                  <option value="seguranca">Técnico de Segurança</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </div>
               <div id="ddsCondutorNomeWrap">
                 <label>Nome do condutor</label>
-                <input type="text" id="ddsCondutorNome" placeholder="Nome completo do condutor">
+                <input type="text" id="ddsCondutorNome" placeholder="Nome completo">
               </div>
-              <div id="ddsCondutorCargoWrap" style="margin-top:4px">
+              <div id="ddsCondutorCargoWrap">
                 <label>Cargo / função</label>
-                <input type="text" id="ddsCondutorCargo" placeholder="Ex: Responsável técnico, CREA 12345">
+                <input type="text" id="ddsCondutorCargo" placeholder="Ex: Resp. técnico, CREA 12345">
               </div>
-            </div>
-
-            <!-- Atividade e local -->
-            <div class="card" style="padding:16px">
-              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:12px">🏗️ Atividade e Local</div>
-              <label>Atividade principal da semana</label>
-              <input type="text" id="ddsAtividade" placeholder="Ex: Montagem de estrutura metálica" style="margin-bottom:8px">
-              <button class="btn btn-outline sm full" onclick="App.ddsGerarTemas()" style="margin-bottom:12px">🤖 Gerar 5 temas por IA</button>
-              <label>Área / Local</label>
-              <input type="text" id="ddsLocal" placeholder="Ex: Subestação SU-01, Pátio externo">
-              <label style="margin-top:10px">Observações gerais</label>
-              <textarea id="ddsObs" rows="2" placeholder="Observações, condições do tempo, ocorrências..."></textarea>
-            </div>
-
-            <!-- Participantes -->
-            <div class="card" style="padding:16px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem">👥 Participantes</div>
-                <span id="ddsPartCount" style="background:#eff6ff;color:var(--brand);border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:700">0</span>
-              </div>
-              <div id="ddsPartLista" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
-                <div style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px">
-                  Selecione a semana e sincronize os participantes do ponto
-                </div>
-              </div>
-            </div>
-
-          </div><!-- /col esquerda -->
-
-          <!-- ── COLUNA DIREITA: temas do DDS ── -->
-          <div>
-            <div class="card" style="padding:16px">
-              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:4px">📋 5 Temas da Semana</div>
-              <p style="font-size:.78rem;color:var(--muted);margin-bottom:16px">Cada tema é apresentado em um dia diferente (Seg–Sex). Edite conforme necessário.</p>
-
-              <div id="ddsTemasLista">
-                <!-- Temas gerados dinamicamente -->
-                <div style="text-align:center;color:var(--muted);font-size:.85rem;padding:32px">
-                  <div style="font-size:2rem;margin-bottom:8px">🤖</div>
-                  Informe a atividade principal e clique em<br><strong>Gerar 5 temas por IA</strong>
-                </div>
-              </div>
-
-              <div id="ddsTemasLoading" style="display:none;text-align:center;padding:32px">
-                <div class="spinner" style="margin:0 auto 12px"></div>
-                <p style="color:var(--muted);font-size:.85rem" id="ddsTemasLoadingTxt">Gerando temas com IA...</p>
-              </div>
-            </div>
-
-            <!-- Assinaturas por dia -->
-            <div class="card" style="padding:16px;margin-top:16px" id="ddsAssinaturasCard" style="display:none">
-              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:12px">✍️ Assinaturas por Dia (fotos do ponto)</div>
-              <div id="ddsAssinaturasDias"></div>
-            </div>
-          </div><!-- /col direita -->
-
-
-        <!-- ── Card configuração de e-mail DDS ── -->
-        <div class="card" style="margin-top:16px;padding:18px 20px" id="ddsEmailCard" style="display:none">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-            <div>
-              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem">📧 Envio do DDS por E-mail</div>
-              <div style="font-size:.78rem;color:var(--muted);margin-top:2px">PDF enviado toda sexta-feira automaticamente ou manualmente. Máx. 5 destinatários.</div>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <div style="display:flex;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
-                <div id="ddsEnvAutoSim" class="reemb-opt active-opt" onclick="App.ddsSetEnvioAuto(true)" style="font-size:.82rem;padding:8px 14px;cursor:pointer">🤖 Auto sexta</div>
-                <div id="ddsEnvAutoNao" class="reemb-opt"             onclick="App.ddsSetEnvioAuto(false)" style="font-size:.82rem;padding:8px 14px;cursor:pointer">✋ Manual</div>
-              </div>
-              <button class="btn btn-outline sm" onclick="App.ddsEnviarEmailAgora()" id="btnDdsEnviarEmail">📨 Enviar agora</button>
             </div>
           </div>
-
-          <label style="margin-top:0">Destinatários (e-mails do departamento de segurança da contratante)</label>
-          <div id="ddsEmailList" style="display:flex;flex-direction:column;gap:7px;margin-bottom:8px"></div>
-          <button class="btn btn-outline sm" onclick="App.ddsAddEmail()" style="margin-bottom:4px">+ Adicionar e-mail</button>
-          <p style="font-size:.74rem;color:var(--muted);margin-top:4px">⚠️ Clique em <strong>Salvar configuração</strong> após adicionar ou remover e-mails.</p>
-
-          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
-            <button class="btn btn-primary sm" onclick="App.ddsSalvarEmailConfig()">💾 Salvar configuração</button>
-          </div>
-          <div class="msg" id="ddsEmailMsg" style="margin-top:8px"></div>
         </div>
 
-        </div><!-- /grid -->
+        <!-- ─── SEÇÃO 2: Atividade + Temas ─── -->
+        <div class="dds-accordion" id="ddsAcc2">
+          <div class="dds-acc-header" onclick="App._ddsToggleAcc('ddsAcc2')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="dds-acc-num">2</span>
+              <div>
+                <div class="dds-acc-title">🏗️ Atividade e Temas da Semana</div>
+                <div class="dds-acc-sub" id="ddsAccSub2">Defina a atividade e gere os 5 temas</div>
+              </div>
+            </div>
+            <span class="dds-acc-arrow">▾</span>
+          </div>
+          <div class="dds-acc-body" id="ddsAccBody2">
+            <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px">
+              <div>
+                <label style="margin-top:0">Atividade principal da semana</label>
+                <input type="text" id="ddsAtividade" placeholder="Ex: Montagem de estrutura metálica" style="margin:0">
+              </div>
+              <button class="btn btn-outline sm" onclick="App.ddsGerarTemas()" style="margin:0;white-space:nowrap;padding:11px 14px">🤖 Gerar temas</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div>
+                <label style="margin-top:0">Área / Local</label>
+                <input type="text" id="ddsLocal" placeholder="Ex: Subestação SU-01">
+              </div>
+              <div>
+                <label style="margin-top:0">Observações</label>
+                <input type="text" id="ddsObs" placeholder="Condições do tempo, ocorrências...">
+              </div>
+            </div>
+
+            <div id="ddsTemasLoading" style="display:none;text-align:center;padding:20px">
+              <div class="spinner" style="margin:0 auto 10px"></div>
+              <p style="color:var(--muted);font-size:.83rem" id="ddsTemasLoadingTxt">Gerando temas...</p>
+            </div>
+
+            <div id="ddsTemasLista">
+              <div style="text-align:center;color:var(--muted);font-size:.82rem;padding:20px;background:#f8f9fc;border-radius:10px;border:1.5px dashed var(--border)">
+                <div style="font-size:1.6rem;margin-bottom:6px">🤖</div>
+                Informe a atividade e clique em <strong>Gerar temas</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── SEÇÃO 3: Participantes ─── -->
+        <div class="dds-accordion" id="ddsAcc3">
+          <div class="dds-acc-header" onclick="App._ddsToggleAcc('ddsAcc3')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="dds-acc-num">3</span>
+              <div>
+                <div class="dds-acc-title">👥 Participantes e Assinaturas</div>
+                <div class="dds-acc-sub" id="ddsAccSub3">Puxados do ponto da semana</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="ddsPartCount" style="background:#eff6ff;color:var(--brand);border-radius:20px;padding:2px 10px;font-size:.73rem;font-weight:700">0</span>
+              <span class="dds-acc-arrow">▾</span>
+            </div>
+          </div>
+          <div class="dds-acc-body" id="ddsAccBody3">
+            <button class="btn btn-outline sm full" onclick="App.ddsSincronizarParticipantes()" id="btnDdsSincronizar" style="margin-bottom:12px">🔄 Sincronizar participantes do ponto</button>
+            <div id="ddsPartLista" style="display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto">
+              <div style="text-align:center;color:var(--muted);font-size:.81rem;padding:14px">
+                Clique em sincronizar para puxar quem bateu ponto na semana
+              </div>
+            </div>
+            <div class="card" style="padding:14px;margin-top:12px;display:none" id="ddsAssinaturasCard">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;margin-bottom:10px">✍️ Assinaturas por Dia (fotos do ponto)</div>
+              <div id="ddsAssinaturasDias"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── SEÇÃO 4: E-mail ─── -->
+        <div class="dds-accordion" id="ddsAcc4">
+          <div class="dds-acc-header" onclick="App._ddsToggleAcc('ddsAcc4')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="dds-acc-num">4</span>
+              <div>
+                <div class="dds-acc-title">📧 Envio por E-mail</div>
+                <div class="dds-acc-sub" id="ddsAccSub4">Configure os destinatários do DDS</div>
+              </div>
+            </div>
+            <span class="dds-acc-arrow">▾</span>
+          </div>
+          <div class="dds-acc-body" id="ddsAccBody4" id="ddsEmailCard">
+            <!-- Toggle auto/manual -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+              <span style="font-size:.83rem;color:var(--muted);font-weight:500">Envio automático toda sexta-feira</span>
+              <div style="display:flex;border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+                <div id="ddsEnvAutoSim" class="reemb-opt active-opt" onclick="App.ddsSetEnvioAuto(true)" style="font-size:.8rem;padding:7px 14px;cursor:pointer">🤖 Automático</div>
+                <div id="ddsEnvAutoNao" class="reemb-opt"             onclick="App.ddsSetEnvioAuto(false)" style="font-size:.8rem;padding:7px 14px;cursor:pointer">✋ Manual</div>
+              </div>
+            </div>
+            <label style="margin-top:0">Destinatários <span style="color:var(--muted);font-weight:400;font-size:.76rem">(dept. de segurança da contratante — máx. 5)</span></label>
+            <div id="ddsEmailList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+            <button class="btn btn-outline sm" onclick="App.ddsAddEmail()" style="margin-bottom:4px">+ Adicionar e-mail</button>
+            <p style="font-size:.72rem;color:var(--muted);margin-top:4px">⚠️ Salve as configurações após adicionar ou remover e-mails.</p>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn btn-primary sm" onclick="App.ddsSalvarEmailConfig()">💾 Salvar configuração</button>
+              <button class="btn btn-outline sm" onclick="App.ddsEnviarEmailAgora()" id="btnDdsEnviarEmail">📨 Enviar agora</button>
+            </div>
+            <div class="msg" id="ddsEmailMsg" style="margin-top:8px"></div>
+          </div>
+        </div>
+
       </div><!-- /ddsPainel -->
     </div>
   </div><!-- fim tab-dds -->
@@ -2002,6 +2057,8 @@
     <input id="editColabNome" type="text" placeholder="Nome do colaborador">
     <label style="margin-top:12px">E-mail</label>
     <input id="editColabEmail" type="email" placeholder="email@exemplo.com">
+    <label style="margin-top:10px">Função / Cargo</label>
+    <input id="editColabFuncao" type="text" placeholder="Ex: Pedreiro, Eletricista, Encarregado...">
     <label style="margin-top:12px">Perfil</label>
     <select id="editColabPerfil" onchange="App.onEditPerfilChange()">
       <option value="USER">👤 Colaborador</option>
@@ -2480,6 +2537,19 @@
     $("pillUser").textContent=nome;
     $("pillUser").classList.remove("hidden");
     $("btnLogout").classList.remove("hidden");
+    // Logo da obra na topbar
+    try{
+      const obraId = profile?.obra_id || (profile?.obras||[])[0];
+      if(obraId){
+        const oSnap = await getDoc(doc(db,"obras",obraId));
+        if(oSnap.exists() && oSnap.data().logoUrl){
+          const logoEl = $("topbarObraLogo");
+          const logoWrap = $("topbarObraLogoWrap");
+          if(logoEl){ logoEl.src = oSnap.data().logoUrl; }
+          if(logoWrap){ logoWrap.classList.remove("hidden"); logoWrap.style.display="flex"; }
+        }
+      }
+    }catch(_){}
     const av = $("topbarAvatar");
     if(av){
       if(profile?.fotoUrl){ av.src = profile.fotoUrl; av.classList.remove("hidden"); }
@@ -2621,6 +2691,7 @@
     const lat     = parseFloat($("obraLat").value) || null;
     const lng     = parseFloat($("obraLng").value) || null;
     const raio    = parseInt($("obraRaio").value) || 100;
+    const logoUrlExist = $("obraLogoUrl")?.value || "";
     const travar  = $("obraTravarPonto").checked;
     const btn     = $("btnSaveObra");
     const editId  = $("obraEditId")?.value||"";
@@ -2645,10 +2716,23 @@
       } else {
         // ── CRIAR nova obra ──
         const id = "OBRA_"+Date.now();
+        // Upload do logo se houver novo arquivo selecionado
+        let logoUrl = logoUrlExist;
+        const loInput = $("obraLogoInput");
+        if(loInput?.files?.[0]){
+          const fd=new FormData();
+          fd.append("file",loInput.files[0]);
+          fd.append("upload_preset",CLOUDINARY_PRESET);
+          fd.append("folder","obras");
+          const cr=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,{method:"POST",body:fd});
+          const cj=await cr.json().catch(()=>({}));
+          if(cj.secure_url) logoUrl=cj.secure_url;
+        }
         await setDoc(doc(db,"obras",id),{
           id, nome, descricao: desc, ativa: true,
           endereco, rua, numero: num, bairro, cidade, estado,
           lat, lng, raio, travarPonto: travar,
+          logoUrl: logoUrl||null,
           criadoPor: currentUser.uid,
           criadoEm: serverTimestamp()
         });
@@ -2661,6 +2745,13 @@
       $("statObras").textContent=snap.docs.filter(d=>d.data().ativa!==false).length;
     } catch(e){ setMsg("obraMsg","Erro: "+e.message); }
     finally{ btn.disabled=false; btn.textContent= $("obraEditId")?.value ? "💾 Atualizar Obra" : "💾 Salvar Obra"; }
+  }
+
+  function obraLogoPreview(input){
+    const file = input?.files?.[0]; if(!file) return;
+    const url = URL.createObjectURL(file);
+    if($("obraLogoPreviewImg"))  $("obraLogoPreviewImg").src = url;
+    if($("obraLogoPreviewWrap")) $("obraLogoPreviewWrap").style.display = "";
   }
 
   function _obraLimparForm(){
@@ -2697,6 +2788,14 @@
       $("obraLng").value      = o.lng||"";
       $("obraRaio").value     = o.raio||100;
       $("obraTravarPonto").checked = o.travarPonto||false;
+      // Logo
+      if($("obraLogoUrl")) $("obraLogoUrl").value = o.logoUrl||"";
+      if(o.logoUrl && $("obraLogoPreviewImg")){
+        $("obraLogoPreviewImg").src = o.logoUrl;
+        $("obraLogoPreviewWrap").style.display="";
+      } else if($("obraLogoPreviewWrap")){
+        $("obraLogoPreviewWrap").style.display="none";
+      }
 
       // Atualizar visual do formulário
       $("obraFormTitulo").textContent    = "✏️ Editar Obra";
@@ -2872,10 +2971,11 @@
     setMsg("userMsg","");
     const nome=$("userNome").value.trim(), email=$("userEmail").value.trim();
     const role=$("userRole").value, obra=$("userObra").value;
-    const permEvolucao = !!$("userPermEvolucao")?.checked;
-    const permPonto    = !!$("userPermPonto")?.checked;
-    const permLanc     = !!$("userPermLanc")?.checked;
-    const permDDS      = !!$("userPermDDS")?.checked;
+    const permEvolucao = !!("userPermEvolucao") && !!$("userPermEvolucao")?.checked;
+    const permPonto    = !!("userPermPonto")    && !!$("userPermPonto")?.checked;
+    const permLanc     = !!("userPermLanc")     && !!$("userPermLanc")?.checked;
+    const permDDS      = !!("userPermDDS")      && !!$("userPermDDS")?.checked;
+    const funcao       = $("userFuncao")?.value.trim() || "";
     const btn=$("btnSaveUser");
     if(!nome){setMsg("userMsg","Informe o nome.");return;}
     if(!email){setMsg("userMsg","Informe o e-mail.");return;}
@@ -2908,6 +3008,7 @@
         canLancamentos: role==="USER" ? permLanc : false,
         canRelatorios:  role==="USER" ? permLanc : false,
         permDDS:        role==="USER" ? permDDS : false,
+        funcao,
         ativo:true, primeiro_acesso:true,
         criadoPor:currentUser.uid, criadoEm:serverTimestamp()
       });
@@ -4911,6 +5012,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("editColabUid").value   = uid;
     $("editColabNome").value  = nome;
     $("editColabEmail").value = email;
+    if($("editColabFuncao")) $("editColabFuncao").value = (allUsers||[]).find(x=>x.id===uid)?.funcao || "";
     const u = (allUsers || []).find(x=>x.id===uid) || {};
     if($("editColabPerfil")) $("editColabPerfil").value = u.role || "USER";
     if($("editPermEvolucao")) $("editPermEvolucao").checked = !!(u.permEvolucao || u.evolResponsavel);
@@ -4929,6 +5031,7 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     const nome   = $("editColabNome").value.trim();
     const email  = $("editColabEmail").value.trim();
     const perfil = $("editColabPerfil")?.value || "USER";
+    const funcao = $("editColabFuncao")?.value.trim() || "";
     if(!nome)  { setMsg("editColabMsg","⚠️ Informe o nome."); return; }
     if(!email) { setMsg("editColabMsg","⚠️ Informe o e-mail."); return; }
     const btn = $("btnSalvarEditColab");
@@ -4945,7 +5048,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         permPontoAdmin: permPonto,
         canLancamentos: permLanc,
         canRelatorios: permLanc,
-        permDDS
+        permDDS,
+        funcao
       });
       toast("✅ Dados atualizados!");
       closeModal("modalEditColab");
@@ -10712,6 +10816,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
     await ddsCarregarSemana();
     await ddsCarregarEmailConfig();
+    _ddsAbrirPrimeira();
   }
 
   // ── Carregar DDS da semana selecionada ───────────────────
@@ -10756,6 +10861,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   // ── Atualizar campos do condutor ─────────────────────────
   function ddsAtualizarCondutor(){
     const tipo = $("ddsTipoCondutor")?.value || "responsavel";
+    const sub1 = $("ddsAccSub1"); if(sub1){ const nm=$("ddsCondutorNome")?.value; sub1.textContent = nm||"Defina quem conduz a reunião"; }
     const nomeEl  = $("ddsCondutorNomeWrap");
     const cargoEl = $("ddsCondutorCargoWrap");
     if(nomeEl)  nomeEl.style.display  = ""; // sempre visível
@@ -10898,6 +11004,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     if(lista)   lista.style.display   = "";
     _ddsRenderTemas();
     toast("✅ 5 temas gerados! Edite conforme necessário.");
+    const sub2=$("ddsAccSub2"); if(sub2&&$("ddsAtividade")?.value) sub2.textContent=$("ddsAtividade").value.slice(0,40)+($("ddsAtividade").value.length>40?"…":"");
   }
   // ── Sincronizar participantes do ponto da semana ─────────
   async function ddsSincronizarParticipantes(){
@@ -11028,6 +11135,24 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
 
+
+  // ── Acordeão DDS ─────────────────────────────────────────────
+  function _ddsToggleAcc(id){
+    const acc = $(id); if(!acc) return;
+    const isOpen = acc.classList.contains("open");
+    // Fechar todos
+    ["ddsAcc1","ddsAcc2","ddsAcc3","ddsAcc4"].forEach(a=>{
+      const el=$(a); if(el){ el.classList.remove("open"); }
+    });
+    // Abrir o clicado (se estava fechado)
+    if(!isOpen) acc.classList.add("open");
+  }
+
+  // Abrir a primeira seção por padrão após carregar
+  function _ddsAbrirPrimeira(){
+    const acc = $("ddsAcc1"); if(acc) acc.classList.add("open");
+  }
+
   // ── Configuração de e-mail DDS ────────────────────────────
   let _ddsEnvioAuto = true;
 
@@ -11041,6 +11166,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         const cfg = snap.data();
         _ddsEnvioAuto = cfg.envioAutomatico !== false;
         (cfg.destinatarios||[]).forEach(em => _ddsAddEmailRow(em));
+        const sub4=$("ddsAccSub4"); if(sub4&&(cfg.destinatarios||[]).length) sub4.textContent=(cfg.destinatarios||[]).length+" destinatário(s) configurado(s)";
       } else {
         _ddsAddEmailRow(""); // linha vazia inicial
       }
@@ -11422,6 +11548,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const el = $("ddsPartLista"); if(!el) return;
     const count = $("ddsPartCount");
     if(count) count.textContent = _ddsPartic.length;
+    const sub3=$("ddsAccSub3"); if(sub3) sub3.textContent=_ddsPartic.length?_ddsPartic.length+" participante(s) sincronizado(s)":"Puxados do ponto da semana";
 
     if(!_ddsPartic.length){
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px">
@@ -11489,7 +11616,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     // Navegação
     goTab, adminTab,
     // Obras
-    saveObra, loadObras, toggleObra, deleteObra, editarObra, cancelarEditObra,
+    saveObra, loadObras, toggleObra, deleteObra, editarObra, obraLogoPreview, cancelarEditObra,
     geocodificarObra, editarGeofencing, geocodificarModal, salvarGeofencing,
     // Colaboradores
     saveUser, loadUsers, filterUsers, toggleUser, abrirResetSenha, confirmarResetSenha,
@@ -11561,6 +11688,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     ddsInicializar, ddsSalvarSemana, ddsCarregarSemana, ddsTrocarObra,
     ddsGerarTemas, ddsAtualizarCondutor, ddsSincronizarParticipantes,
     ddsAddEmail, ddsSetEnvioAuto, ddsSalvarEmailConfig, ddsEnviarEmailAgora,
+    _ddsToggleAcc,
     visitanteInicializar, vFiltrarGaleria, vVerFotoAmp, vVerClimaAmp, vFiltrarGrupo,
     vApagarFoto, vTrocarFoto,
     evolAbrirDiario, evolSalvarDiario, evolCarregarDiarioData, evolAtualizarCamposDiario,
