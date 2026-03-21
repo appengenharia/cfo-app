@@ -10742,7 +10742,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
   // ── Gerar temas por IA ───────────────────────────────────
-  async function ddsGerarTemas(){
+  function ddsGerarTemas(){
     const atividade = ($("ddsAtividade")?.value || "").trim();
     if(!atividade){ toast("Informe a atividade principal primeiro.", false); return; }
 
@@ -10750,54 +10750,125 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const lista   = $("ddsTemasLista");
     if(loading) loading.style.display = "";
     if(lista)   lista.style.display   = "none";
-    if($("ddsTemasLoadingTxt")) $("ddsTemasLoadingTxt").textContent = "Gerando temas com IA...";
+    if($("ddsTemasLoadingTxt")) $("ddsTemasLoadingTxt").textContent = "Gerando temas...";
 
     const DIAS = ["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"];
-    const PARTES_NR = ["NR-01 Disposições Gerais","NR-06 EPIs","NR-10 Elétrica","NR-18 Construção Civil","NR-35 Trabalho em Altura","Primeiros Socorros","Uso correto de ferramentas","Prevenção de quedas","Riscos ergonômicos","Comunicação de riscos"];
 
-    try{
-      const resp = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
-          max_tokens:1500,
-          messages:[{
-            role:"user",
-            content:`Você é especialista em segurança do trabalho na construção civil.
-Crie 5 temas de DDS (Diálogo Diário de Segurança) para a semana, relacionados à atividade: "${atividade}".
+    // ── Biblioteca de temas por categoria ────────────────────────────────
+    const BANCO = [
+      // EPI
+      { tags:["epi","equipamento","proteção","capacete","luva","bota","óculos","cinto"],
+        titulo:"Uso correto de EPIs — NR-06",
+        conteudo:"Os Equipamentos de Proteção Individual são obrigatórios por lei. Verifique diariamente capacete, óculos, luvas, botinas e cinto paraquedista. EPI danificado deve ser substituído imediatamente. O não uso é infração grave e coloca sua vida em risco." },
+      // Altura
+      { tags:["altura","andaime","escada","telhado","cobertura","laje","queda","elevado"],
+        titulo:"Trabalho em Altura — NR-35",
+        conteudo:"Todo trabalho acima de 2 metros exige cinto paraquedista e ponto de ancoragem certificado. Antes de subir: inspecione o equipamento, verifique o ponto de ancoragem e nunca trabalhe sozinho em altura. Comunicar qualquer desvio ao responsável." },
+      // Elétrica
+      { tags:["elétric","eletric","subestação","alta tensão","tensão","raio","cabos","fios","energia","transformador"],
+        titulo:"Segurança em Instalações Elétricas — NR-10",
+        conteudo:"Nunca aproxime ferramentas ou o corpo de equipamentos energizados. Respeite as distâncias de segurança. Em subestações: apenas profissionais habilitados NR-10. Raios: suspender atividades externas a 10 km. Todo colaborador deve saber localizar o disjuntor geral." },
+      // Ferramentas
+      { tags:["ferramenta","esmeril","furadeira","martelete","corte","serra","rebarbadora","solda"],
+        titulo:"Uso Seguro de Ferramentas Elétricas",
+        conteudo:"Inspecione cabos e plugues antes do uso. Utilize sempre óculos de proteção e luvas adequadas. Jamais remova proteções fixas. Ao terminar, desligue e guarde em local seguro. Ferramentas defeituosas devem ser sinalizadas e retiradas de uso imediatamente." },
+      // Içamento
+      { tags:["içamento","içar","guindaste","talha","içar","carga","levantamento","grua","transporte","movimentação"],
+        titulo:"Movimentação e Içamento de Cargas — NR-11",
+        conteudo:"Nunca fique sob carga suspensa. Verifique a capacidade dos equipamentos de içamento. Sinalize a área de risco. O operador deve ser habilitado. Correntes e cintas devem ser inspecionadas antes de cada uso. Comunicar desvios ao encarregado." },
+      // Incêndio
+      { tags:["incêndio","fogo","extintor","queimada","chama","solda","faísca","combustível","inflamável"],
+        titulo:"Prevenção e Combate a Incêndio",
+        conteudo:"Localize os extintores antes de iniciar o trabalho. Nunca bloqueie saídas de emergência. Mantenha materiais inflamáveis afastados de fontes de calor. Em caso de incêndio: evacue, acione o alarme e só combata o fogo se for pequeno e você tiver treinamento." },
+      // Sinalização
+      { tags:["sinaliz","placa","cone","fita","isolamento","barreira","trânsito","acesso"],
+        titulo:"Sinalização de Segurança e Isolamento de Área",
+        conteudo:"Sinalize sempre as frentes de trabalho com cones, fitas e placas. A sinalização protege trabalhadores e terceiros. Nunca remova sinalizações sem autorização. Respeite as barreiras de isolamento. Área sinalizada = área de risco." },
+      // Ergonomia
+      { tags:["ergonomia","postura","peso","carregar","coluna","lombar","flexão","repetitivo"],
+        titulo:"Ergonomia e Prevenção de Lesões",
+        conteudo:"Ao carregar cargas, dobre os joelhos e mantenha as costas retas. Evite torções bruscas. Para cargas acima de 23 kg, solicite ajuda ou use equipamento. Faça pausas regulares em tarefas repetitivas. Dores persistentes devem ser comunicadas ao técnico de segurança." },
+      // Limpeza / Ordem
+      { tags:["limpeza","organização","ordem","detritos","entulho","passagem","piso"],
+        titulo:"Ordem e Limpeza no Canteiro — 5S",
+        conteudo:"Manter a obra limpa e organizada reduz acidentes. Remova entulho diariamente. Mantenha passagens desobstruídas. Ferramentas devem ter local fixo. Líquidos derramados devem ser limpos imediatamente para evitar escorregamentos. Ambiente organizado = ambiente seguro." },
+      // Calor / Sol
+      { tags:["calor","sol","hidratação","insolação","temperatura","verão","externo","campo"],
+        titulo:"Proteção contra Calor e Insolação",
+        conteudo:"Hidrate-se a cada 15-20 minutos mesmo sem sentir sede. Use protetor solar FPS 30+. Use balaclava e camiseta UV. Realize atividades pesadas nas horas mais frescas. Sinais de insolação: tontura, pele vermelha, confusão. Procure sombra e informe o encarregado imediatamente." },
+      // Comunicação
+      { tags:["comunicação","reporte","acidente","incidente","quase","acidente","nr-01"],
+        titulo:"Comunicação de Riscos e Quase-Acidentes — NR-01",
+        conteudo:"Todo quase-acidente deve ser comunicado ao encarregado. Não existe 'pequeno acidente'. A comunicação permite corrigir o risco antes de alguém se machucar. Use o canal de comunicação da obra. Nunca omita um incidente por medo de represálias." },
+      // Estrutura metálica
+      { tags:["metal","estrutura","soldagem","aço","chapa","perfil","montagem","parafuso"],
+        titulo:"Segurança na Montagem de Estruturas Metálicas",
+        conteudo:"Use sempre cinto paraquedista ancorado ao estruturar em altura. Inspecione soldas, parafusos e uniões antes de liberar a estrutura. Atenção a rebarbas e arestas cortantes — use luva de raspa. Nunca trabalhe abaixo de montagem em andamento sem proteção contra queda de objetos." },
+      // Chuva / Clima
+      { tags:["chuva","raio","vento","clima","temporal","molhado","úmido"],
+        titulo:"Trabalho em Condições Climáticas Adversas",
+        conteudo:"Suspender atividades ao ar livre com raios a menos de 10 km (WeatherBug). Piso molhado aumenta risco de queda — use calçado antiderrapante. Ventos fortes: suspender içamentos. Após chuva, inspecione andaimes e escadas antes de usar. Segurança não tem prazo." },
+      // Primeiros socorros
+      { tags:["primeiros socorros","socorro","emergência","lesão","corte","machucado","hospital"],
+        titulo:"Primeiros Socorros e Condutas de Emergência",
+        conteudo:"Conheça a localização do kit de primeiros socorros. Em caso de corte: comprima com pano limpo e comunique. Em queda: não mova a vítima sem orientação. Guarde o número do SAMU (192) e do responsável pela obra. Em caso de acidente grave: ligue 192 e preserve o local." },
+      // Trabalho em espaço confinado
+      { tags:["confinado","poço","caixa","duto","câmara","silo","espaço"],
+        titulo:"Trabalho em Espaço Confinado — NR-33",
+        conteudo:"Espaços confinados exigem permissão de entrada. Teste a atmosfera (O2, gases) antes de entrar. Mantenha vigias externos. Use EPI adequado e sistema de resgate. Nunca entre sozinho. Sem autorização formal e treinamento NR-33, a entrada é proibida." },
+    ];
 
-Um tema por dia (Segunda a Sexta). Cada tema deve:
-- Ter um título objetivo (máx 60 chars)
-- Ter 3-4 linhas de conteúdo prático e didático para operários
-- Referenciar NRs aplicáveis quando relevante
+    // ── Selecionar 5 temas mais relevantes para a atividade ──────────────
+    const atv = atividade.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 
-Retorne APENAS JSON válido, sem markdown:
-{"temas":[{"dia":"Segunda-feira","titulo":"...","conteudo":"..."},...]}`
-          }]
-        })
-      });
-      const data = await resp.json();
-      const txt  = (data.content||[]).map(b=>b.text||"").join("").trim();
-      const parsed = JSON.parse(txt.replace(/```json|```/g,"").trim());
-      _ddsTemas = parsed.temas || [];
-      // Garantir os 5 dias
-      DIAS.forEach((dia, i)=>{
-        if(!_ddsTemas[i]) _ddsTemas[i] = {dia, titulo:"", conteudo:""};
-        else _ddsTemas[i].dia = dia;
-      });
-    }catch(e){
-      console.error(e);
-      // Fallback manual
-      _ddsTemas = DIAS.map(dia=>({dia, titulo:"", conteudo:""}));
-      toast("IA indisponível — temas criados em branco para edição manual.", false);
+    // Pontuar cada tema pela relevância com a atividade
+    const pontuados = BANCO.map(tema => {
+      let score = 0;
+      for(const tag of tema.tags){
+        const t = tag.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+        if(atv.includes(t)) score += 3;
+        // Também testa parcial (primeiros 4 chars)
+        if(t.length >= 4 && atv.includes(t.slice(0,4))) score += 1;
+      }
+      return { ...tema, score };
+    }).sort((a,b) => b.score - a.score);
+
+    // Pegar top 5 garantindo variedade — forçar EPI, NR-35 e comunicação se não aparecerem
+    const FIXOS_IDX = [0, 10]; // EPI e comunicação sempre entram se não rankeados
+    const top = [];
+    const usados = new Set();
+
+    // Adicionar os mais relevantes
+    for(const t of pontuados){
+      if(top.length >= 5) break;
+      if(!usados.has(t.titulo)){ top.push(t); usados.add(t.titulo); }
     }
+
+    // Se menos de 5, complementar com fixos
+    for(const idx of FIXOS_IDX){
+      if(top.length >= 5) break;
+      const t = BANCO[idx];
+      if(!usados.has(t.titulo)){ top.push(t); usados.add(t.titulo); }
+    }
+
+    // Garantir exatamente 5
+    while(top.length < 5){
+      const fallback = BANCO.find(t => !usados.has(t.titulo));
+      if(!fallback) break;
+      top.push(fallback); usados.add(fallback.titulo);
+    }
+
+    _ddsTemas = DIAS.map((dia, i) => ({
+      dia,
+      titulo:   top[i]?.titulo   || "",
+      conteudo: top[i]?.conteudo || "",
+    }));
 
     if(loading) loading.style.display = "none";
     if(lista)   lista.style.display   = "";
     _ddsRenderTemas();
+    toast("✅ 5 temas gerados! Edite conforme necessário.");
   }
-
   // ── Sincronizar participantes do ponto da semana ─────────
   async function ddsSincronizarParticipantes(){
     if(!_ddsObraId || !_ddsSemana){ toast("Selecione obra e semana primeiro.", false); return; }
