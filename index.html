@@ -271,7 +271,25 @@
   .evol-dashboard-inner{width:min(100%,980px);margin:0 auto}
   .evol-dash-grid{display:grid;grid-template-columns:minmax(260px,300px) minmax(0,1fr) !important;justify-content:center;align-items:start}
   @media(max-width:900px){.evol-dashboard-inner{width:100%}.evol-dash-grid{grid-template-columns:1fr !important;gap:18px !important}}
-  @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}.evolGrafGrid{grid-template-columns:1fr!important}}</style>
+  @media(max-width:600px){.evol-dash-grid{grid-template-columns:1fr !important}.evolGrafGrid{grid-template-columns:1fr!important}}
+  /* ── DDS — Diálogo Diário de Segurança ── */
+  .dds-tema-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:border-color .18s}
+  .dds-tema-card:hover{border-color:var(--brand)}
+  .dds-tema-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-size:.75rem;font-weight:700;flex-shrink:0;margin-right:10px}
+  .dds-parte-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:#eff6ff;color:var(--brand);margin-bottom:6px}
+  .dds-part-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+  .dds-part-foto{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;background:#e5e7eb}
+  .dds-part-info{flex:1;min-width:0}
+  .dds-part-nome{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dds-part-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+  .dds-assinado{border-color:#10b981;background:#f0fdf4}
+  .dds-assinado .dds-part-nome::after{content:" ✅";color:#10b981}
+  .dds-week-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .dds-week-nav input[type=week]{padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;background:#f8f9fc}
+  .dds-status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600}
+  .dds-status-badge.rascunho{background:#fff8e1;color:#92640a}
+  .dds-status-badge.finalizado{background:#ecfdf5;color:#065f46}
+</style>
 </head>
 <body>
 
@@ -536,6 +554,7 @@
     <button class="nav-item hidden" id="sideRH" onclick="App.goTab('rh')" data-tab="rh"><span class="nav-icon">👔</span> RH</button>
     <button class="nav-item hidden" id="sideAdmin" onclick="App.goTab('admin')" data-tab="admin"><span class="nav-icon">⚙️</span> Administração</button>
     <button class="nav-item hidden" id="sideEvolucao" onclick="App.goTab('evolucao')" data-tab="evolucao"><span class="nav-icon">📈</span> Evolução de Obras</button>
+    <button class="nav-item hidden" id="sideDDS" onclick="App.goTab('dds')" data-tab="dds"><span class="nav-icon">🦺</span> DDS</button>
   </nav>
 
   <main class="app-content">
@@ -1437,6 +1456,134 @@
       </div><!-- fim evolPainelPrincipal -->
     </div>
   </div><!-- fim tab-evolucao -->
+  <!-- ══════════════════════════════════════════════════════════
+       TAB: DDS — DIÁLOGO DIÁRIO DE SEGURANÇA
+       ══════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-dds">
+    <div style="max-width:1100px;margin:0 auto">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+        <div>
+          <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.35rem">🦺 DDS — Diálogo Diário de Segurança</h1>
+          <p style="font-size:.82rem;color:var(--muted);margin-top:2px">Registro semanal com temas, participantes e assinaturas (fotos do ponto)</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="ddsFiltroObra" onchange="App.ddsTrocarObra()" style="margin:0;font-size:.84rem;padding:8px 12px;max-width:240px">
+            <option value="">— Selecione a obra —</option>
+          </select>
+          <button class="btn btn-primary sm" id="btnDdsSalvar" onclick="App.ddsSalvarSemana()" style="display:none">💾 Salvar DDS</button>
+        </div>
+      </div>
+
+      <!-- Sem obra selecionada -->
+      <div id="ddsVazio" class="card" style="text-align:center;padding:48px 24px">
+        <div style="font-size:3rem;margin-bottom:12px">🦺</div>
+        <h3 style="font-family:'Syne',sans-serif;color:var(--brand);margin-bottom:8px">Selecione uma obra</h3>
+        <p style="color:var(--muted);font-size:.88rem">Escolha a obra para registrar o DDS da semana</p>
+      </div>
+
+      <!-- Painel principal -->
+      <div id="ddsPainel" style="display:none">
+
+        <!-- Navegação de semana -->
+        <div class="card" style="padding:16px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="dds-week-nav">
+              <label style="margin:0;font-weight:600;font-size:.85rem;color:var(--text)">Semana:</label>
+              <input type="week" id="ddsSemana" onchange="App.ddsCarregarSemana()" style="margin:0">
+            </div>
+            <div id="ddsStatusBadge" class="dds-status-badge rascunho" style="display:none">📝 Rascunho</div>
+            <div style="flex:1"></div>
+            <button class="btn btn-outline sm" onclick="App.ddsSincronizarParticipantes()" id="btnDdsSincronizar" style="display:none">🔄 Sincronizar participantes do ponto</button>
+          </div>
+        </div>
+
+        <!-- Grid 2 colunas: esquerda configuração, direita temas -->
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start">
+
+          <!-- ── COLUNA ESQUERDA: configuração ── -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+
+            <!-- Condutor -->
+            <div class="card" style="padding:16px">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:12px">👤 Condutor do DDS</div>
+              <label>Quem conduz</label>
+              <select id="ddsTipoCondutor" onchange="App.ddsAtualizarCondutor()" style="margin-bottom:8px">
+                <option value="responsavel">Responsável da obra</option>
+                <option value="seguranca">Técnico de Segurança</option>
+                <option value="outro">Outro</option>
+              </select>
+              <div id="ddsCondutorNomeWrap">
+                <label>Nome do condutor</label>
+                <input type="text" id="ddsCondutorNome" placeholder="Nome completo do condutor">
+              </div>
+              <div id="ddsCondutorCargoWrap" style="margin-top:4px">
+                <label>Cargo / função</label>
+                <input type="text" id="ddsCondutorCargo" placeholder="Ex: Responsável técnico, CREA 12345">
+              </div>
+            </div>
+
+            <!-- Atividade e local -->
+            <div class="card" style="padding:16px">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:12px">🏗️ Atividade e Local</div>
+              <label>Atividade principal da semana</label>
+              <input type="text" id="ddsAtividade" placeholder="Ex: Montagem de estrutura metálica" style="margin-bottom:8px">
+              <button class="btn btn-outline sm full" onclick="App.ddsGerarTemas()" style="margin-bottom:12px">🤖 Gerar 5 temas por IA</button>
+              <label>Área / Local</label>
+              <input type="text" id="ddsLocal" placeholder="Ex: Subestação SU-01, Pátio externo">
+              <label style="margin-top:10px">Observações gerais</label>
+              <textarea id="ddsObs" rows="2" placeholder="Observações, condições do tempo, ocorrências..."></textarea>
+            </div>
+
+            <!-- Participantes -->
+            <div class="card" style="padding:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem">👥 Participantes</div>
+                <span id="ddsPartCount" style="background:#eff6ff;color:var(--brand);border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:700">0</span>
+              </div>
+              <div id="ddsPartLista" style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+                <div style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px">
+                  Selecione a semana e sincronize os participantes do ponto
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /col esquerda -->
+
+          <!-- ── COLUNA DIREITA: temas do DDS ── -->
+          <div>
+            <div class="card" style="padding:16px">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:4px">📋 5 Temas da Semana</div>
+              <p style="font-size:.78rem;color:var(--muted);margin-bottom:16px">Cada tema é apresentado em um dia diferente (Seg–Sex). Edite conforme necessário.</p>
+
+              <div id="ddsTemasLista">
+                <!-- Temas gerados dinamicamente -->
+                <div style="text-align:center;color:var(--muted);font-size:.85rem;padding:32px">
+                  <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+                  Informe a atividade principal e clique em<br><strong>Gerar 5 temas por IA</strong>
+                </div>
+              </div>
+
+              <div id="ddsTemasLoading" style="display:none;text-align:center;padding:32px">
+                <div class="spinner" style="margin:0 auto 12px"></div>
+                <p style="color:var(--muted);font-size:.85rem" id="ddsTemasLoadingTxt">Gerando temas com IA...</p>
+              </div>
+            </div>
+
+            <!-- Assinaturas por dia -->
+            <div class="card" style="padding:16px;margin-top:16px" id="ddsAssinaturasCard" style="display:none">
+              <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:12px">✍️ Assinaturas por Dia (fotos do ponto)</div>
+              <div id="ddsAssinaturasDias"></div>
+            </div>
+          </div><!-- /col direita -->
+
+        </div><!-- /grid -->
+      </div><!-- /ddsPainel -->
+    </div>
+  </div><!-- fim tab-dds -->
+
+
 
   
   <!-- ═══ MODAL: Diário de clima e produção ═══ -->
@@ -1752,6 +1899,7 @@
     <button class="nav-item hidden" id="bottomRH" onclick="App.goTab('rh')" data-tab="rh"><span class="nav-icon">👔</span><span>RH</span></button>
     <button class="nav-item hidden" id="bottomAdmin" onclick="App.goTab('admin')" data-tab="admin"><span class="nav-icon">⚙️</span><span>Admin</span></button>
     <button class="nav-item hidden" id="bottomEvolucao" onclick="App.goTab('evolucao')" data-tab="evolucao"><span class="nav-icon">📈</span><span>Evolução</span></button>
+    <button class="nav-item hidden" id="bottomDDS" onclick="App.goTab('dds')" data-tab="dds"><span class="nav-icon">🦺</span><span>DDS</span></button>
   </nav>
 </div>
 
@@ -2025,6 +2173,7 @@
     if(tab==="rh"    && currentRole!=="ADMIN") return;
     if(tab==="ponto" && currentRole!=="ADMIN" && !canAcessarCartaoPonto()) return;
     if(tab==="evolucao" && currentRole!=="ADMIN" && !canEvoluirObra()) return;
+    if(tab==="dds"      && currentRole!=="ADMIN" && !canFazerDDS(currentProfile) && !canEvoluirObra(currentProfile)) return;
     if(tab==="lancamentos" && currentRole!=="ADMIN" && !canFazerLancamentos()) return;
     if(tab==="relatorios"  && currentRole!=="ADMIN" && !canAcessarRelatorios()) return;
     document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
@@ -2038,6 +2187,7 @@
     if(tab==="ponto")       { fillPontoFiltros(); }
     if(tab==="rh")          { rhCarregarLista(); _rhVerificarExamesVencimento(); }
     if(tab==="evolucao")    { evolInicializar(); }
+    if(tab==="dds")         { ddsInicializar(); }
   }
 
   function adminTab(tab) {
@@ -2267,7 +2417,7 @@
 
   async function initApp(user) {
     currentUser=user;
-    ["sideAdmin","bottomAdmin","sidePonto","bottomPonto","sideRH","bottomRH","sideEvolucao","bottomEvolucao","sideLancamentos","bottomLancamentos","sideRelatorios","bottomRelatorios"].forEach(id=>$(id)?.classList.add("hidden"));
+    ["sideAdmin","bottomAdmin","sidePonto","bottomPonto","sideRH","bottomRH","sideEvolucao","bottomEvolucao","sideDDS","bottomDDS","sideLancamentos","bottomLancamentos","sideRelatorios","bottomRelatorios"].forEach(id=>$(id)?.classList.add("hidden"));
     const profile=await loadProfile(user.uid);
     const nome=profile?.nome||user.email.split("@")[0];
     currentRole=profile?.role||"USER";
@@ -2317,6 +2467,7 @@
       if(canAcessarRelatorios(profile)){ $("sideRelatorios")?.classList.remove("hidden"); $("bottomRelatorios")?.classList.remove("hidden"); }
       if(canAcessarCartaoPonto(profile)){ $("sidePonto")?.classList.remove("hidden"); $("bottomPonto")?.classList.remove("hidden"); }
       if(canEvoluirObra(profile)){ $("sideEvolucao")?.classList.remove("hidden"); $("bottomEvolucao")?.classList.remove("hidden"); }
+      if(canFazerDDS(profile)||canEvoluirObra(profile)){ $("sideDDS")?.classList.remove("hidden"); $("bottomDDS")?.classList.remove("hidden"); }
     }
 
 
@@ -10453,7 +10604,427 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
   // ── fim módulo visitante ──
 
-    window.App = {
+  
+  // ════════════════════════════════════════════════════════
+  // MÓDULO DDS — DIÁLOGO DIÁRIO DE SEGURANÇA (v15)
+  // Firestore: obras/{obraId}/dds/{YYYY-Www}
+  //   { semana, obraId, obraNome, condutor:{tipo,nome,cargo},
+  //     atividade, local, obs, temas:[{dia,titulo,conteudo}],
+  //     participantes:[{uid,nome,funcao,fotoUrl,diasPresente:[]}],
+  //     status:'rascunho'|'finalizado', criadoEm, atualizadoEm }
+  // ════════════════════════════════════════════════════════
+
+  let _ddsObraId   = "";
+  let _ddsObraNome = "";
+  let _ddsSemana   = "";   // formato YYYY-Www
+  let _ddsTemas    = [];   // [{dia,titulo,conteudo}]
+  let _ddsPartic   = [];   // [{uid,nome,funcao,fotoUrl,diasPresente}]
+  let _ddsStatus   = "rascunho";
+
+  // ── Helper: semana atual no formato YYYY-Www ──────────────
+  function _ddsSemanaAtual(){
+    const d = new Date();
+    // Calcular número da semana ISO
+    const jan4 = new Date(d.getFullYear(), 0, 4);
+    const startOfWeek = new Date(jan4);
+    startOfWeek.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1);
+    const diff = d - startOfWeek;
+    const week = Math.floor(diff / 604800000) + 1;
+    return `${d.getFullYear()}-W${String(week).padStart(2,"0")}`;
+  }
+
+  // ── Inicializar aba DDS ──────────────────────────────────
+  async function ddsInicializar(){
+    // Preencher select de obras
+    const sel = $("ddsFiltroObra");
+    if(sel && sel.options.length <= 1){
+      try{
+        const snap = await getDocs(collection(db,"obras"));
+        snap.forEach(d=>{
+          if(d.data().ativa===false) return;
+          // USER: só vê obra alocada
+          if(currentRole!=="ADMIN"){
+            if(!currentProfile?.obras?.includes(d.id) && currentProfile?.obra_id!==d.id) return;
+          }
+          const o = document.createElement("option");
+          o.value = d.id; o.textContent = d.data().nome;
+          sel.appendChild(o);
+        });
+        // Auto-selecionar se só houver uma obra
+        if(sel.options.length === 2){ sel.selectedIndex=1; ddsTrocarObra(); }
+      }catch(e){ console.error(e); }
+    }
+
+    // Definir semana atual no input
+    const semInput = $("ddsSemana");
+    if(semInput && !semInput.value) semInput.value = _ddsSemanaAtual();
+  }
+
+  // ── Trocar obra ──────────────────────────────────────────
+  async function ddsTrocarObra(){
+    const obraId = $("ddsFiltroObra")?.value || "";
+    $("ddsVazio").style.display   = obraId ? "none" : "";
+    $("ddsPainel").style.display  = obraId ? ""     : "none";
+    $("btnDdsSalvar").style.display    = obraId ? "" : "none";
+    $("btnDdsSincronizar").style.display = obraId ? "" : "none";
+    if(!obraId){ _ddsObraId=""; return; }
+
+    try{
+      const snap = await getDoc(doc(db,"obras",obraId));
+      _ddsObraNome = snap.exists() ? snap.data().nome : obraId;
+    }catch(_){ _ddsObraNome = obraId; }
+    _ddsObraId = obraId;
+
+    // Condutor padrão: nome do perfil atual
+    if($("ddsCondutorNome") && !$("ddsCondutorNome").value){
+      $("ddsCondutorNome").value = currentProfile?.nome || "";
+      $("ddsCondutorCargo").value = "";
+    }
+
+    await ddsCarregarSemana();
+  }
+
+  // ── Carregar DDS da semana selecionada ───────────────────
+  async function ddsCarregarSemana(){
+    if(!_ddsObraId) return;
+    const sem = $("ddsSemana")?.value || _ddsSemanaAtual();
+    _ddsSemana = sem;
+
+    try{
+      const snap = await getDoc(doc(db,"obras",_ddsObraId,"dds",sem));
+      if(snap.exists()){
+        const d = snap.data();
+        _ddsTemas  = d.temas  || [];
+        _ddsPartic = d.participantes || [];
+        _ddsStatus = d.status || "rascunho";
+        // Preencher campos
+        if($("ddsTipoCondutor"))  $("ddsTipoCondutor").value  = d.condutor?.tipo  || "responsavel";
+        if($("ddsCondutorNome"))  $("ddsCondutorNome").value  = d.condutor?.nome  || currentProfile?.nome || "";
+        if($("ddsCondutorCargo")) $("ddsCondutorCargo").value = d.condutor?.cargo || "";
+        if($("ddsAtividade"))     $("ddsAtividade").value     = d.atividade || "";
+        if($("ddsLocal"))         $("ddsLocal").value         = d.local     || "";
+        if($("ddsObs"))           $("ddsObs").value           = d.obs       || "";
+        ddsAtualizarCondutor();
+      } else {
+        // Novo DDS — reset
+        _ddsTemas  = [];
+        _ddsPartic = [];
+        _ddsStatus = "rascunho";
+        if($("ddsCondutorNome"))  $("ddsCondutorNome").value  = currentProfile?.nome || "";
+        if($("ddsCondutorCargo")) $("ddsCondutorCargo").value = "";
+        if($("ddsAtividade"))     $("ddsAtividade").value     = "";
+        if($("ddsLocal"))         $("ddsLocal").value         = "";
+        if($("ddsObs"))           $("ddsObs").value           = "";
+      }
+    }catch(e){ console.error(e); }
+
+    _ddsRenderTemas();
+    _ddsRenderParticipantes();
+    _ddsRenderStatus();
+  }
+
+  // ── Atualizar campos do condutor ─────────────────────────
+  function ddsAtualizarCondutor(){
+    const tipo = $("ddsTipoCondutor")?.value || "responsavel";
+    const nomeEl  = $("ddsCondutorNomeWrap");
+    const cargoEl = $("ddsCondutorCargoWrap");
+    if(nomeEl)  nomeEl.style.display  = ""; // sempre visível
+    if(cargoEl) cargoEl.style.display = "";
+    if(tipo === "responsavel"){
+      if($("ddsCondutorNome") && !$("ddsCondutorNome").value)
+        $("ddsCondutorNome").value = currentProfile?.nome || "";
+      if($("ddsCondutorCargo") && !$("ddsCondutorCargo").value)
+        $("ddsCondutorCargo").value = "Responsável técnico";
+    } else if(tipo === "seguranca"){
+      if($("ddsCondutorCargo") && !$("ddsCondutorCargo").value)
+        $("ddsCondutorCargo").value = "Técnico de Segurança do Trabalho";
+    }
+  }
+
+  // ── Gerar temas por IA ───────────────────────────────────
+  async function ddsGerarTemas(){
+    const atividade = ($("ddsAtividade")?.value || "").trim();
+    if(!atividade){ toast("Informe a atividade principal primeiro.", false); return; }
+
+    const loading = $("ddsTemasLoading");
+    const lista   = $("ddsTemasLista");
+    if(loading) loading.style.display = "";
+    if(lista)   lista.style.display   = "none";
+    if($("ddsTemasLoadingTxt")) $("ddsTemasLoadingTxt").textContent = "Gerando temas com IA...";
+
+    const DIAS = ["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"];
+    const PARTES_NR = ["NR-01 Disposições Gerais","NR-06 EPIs","NR-10 Elétrica","NR-18 Construção Civil","NR-35 Trabalho em Altura","Primeiros Socorros","Uso correto de ferramentas","Prevenção de quedas","Riscos ergonômicos","Comunicação de riscos"];
+
+    try{
+      const resp = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1500,
+          messages:[{
+            role:"user",
+            content:`Você é especialista em segurança do trabalho na construção civil.
+Crie 5 temas de DDS (Diálogo Diário de Segurança) para a semana, relacionados à atividade: "${atividade}".
+
+Um tema por dia (Segunda a Sexta). Cada tema deve:
+- Ter um título objetivo (máx 60 chars)
+- Ter 3-4 linhas de conteúdo prático e didático para operários
+- Referenciar NRs aplicáveis quando relevante
+
+Retorne APENAS JSON válido, sem markdown:
+{"temas":[{"dia":"Segunda-feira","titulo":"...","conteudo":"..."},...]}`
+          }]
+        })
+      });
+      const data = await resp.json();
+      const txt  = (data.content||[]).map(b=>b.text||"").join("").trim();
+      const parsed = JSON.parse(txt.replace(/```json|```/g,"").trim());
+      _ddsTemas = parsed.temas || [];
+      // Garantir os 5 dias
+      DIAS.forEach((dia, i)=>{
+        if(!_ddsTemas[i]) _ddsTemas[i] = {dia, titulo:"", conteudo:""};
+        else _ddsTemas[i].dia = dia;
+      });
+    }catch(e){
+      console.error(e);
+      // Fallback manual
+      _ddsTemas = DIAS.map(dia=>({dia, titulo:"", conteudo:""}));
+      toast("IA indisponível — temas criados em branco para edição manual.", false);
+    }
+
+    if(loading) loading.style.display = "none";
+    if(lista)   lista.style.display   = "";
+    _ddsRenderTemas();
+  }
+
+  // ── Sincronizar participantes do ponto da semana ─────────
+  async function ddsSincronizarParticipantes(){
+    if(!_ddsObraId || !_ddsSemana){ toast("Selecione obra e semana primeiro.", false); return; }
+    const btn = $("btnDdsSincronizar");
+    if(btn){ btn.disabled=true; btn.textContent="⏳ Sincronizando..."; }
+
+    try{
+      // Calcular datas da semana (Seg–Sex)
+      const [ano, semNum] = _ddsSemana.split("-W").map(Number);
+      const jan4 = new Date(ano, 0, 4);
+      const startWeek = new Date(jan4);
+      startWeek.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (semNum-1)*7);
+      const datas = [];
+      for(let i=0;i<5;i++){
+        const d = new Date(startWeek);
+        d.setDate(startWeek.getDate()+i);
+        datas.push(d.toISOString().split("T")[0]);
+      }
+
+      // Buscar pontos da semana para a obra
+      const q = query(collection(db,"pontos"),
+        where("obra_id","==",_ddsObraId),
+        where("data",">=",datas[0]),
+        where("data","<=",datas[4])
+      );
+      const snap = await getDocs(q);
+
+      // Agrupar por colaborador
+      const mapa = {}; // uid → {nome, funcao, fotoUrl, diasPresente:[data,...], fotos:{data:url}}
+      snap.forEach(d=>{
+        const p = d.data();
+        if(!p.uid) return;
+        if(!mapa[p.uid]){
+          mapa[p.uid] = {
+            uid:p.uid,
+            nome:p.colaborador_nome||"—",
+            funcao:"",
+            fotoUrl:"",
+            diasPresente:[],
+            fotosPonto:{}
+          };
+        }
+        mapa[p.uid].diasPresente.push(p.data);
+        // Foto de entrada como "assinatura"
+        if(p.fotoEntrada) mapa[p.uid].fotosPonto[p.data] = p.fotoEntrada;
+      });
+
+      // Buscar fotos de perfil dos usuários
+      const uids = Object.keys(mapa);
+      for(const uid of uids){
+        try{
+          const uSnap = await getDoc(doc(db,"usuarios",uid));
+          if(uSnap.exists()){
+            const u = uSnap.data();
+            mapa[uid].fotoUrl  = u.fotoUrl  || "";
+            mapa[uid].funcao   = u.funcaoOutro || u.funcao || "";
+          }
+        }catch(_){}
+      }
+
+      _ddsPartic = Object.values(mapa).sort((a,b)=>a.nome.localeCompare(b.nome));
+      _ddsRenderParticipantes();
+      _ddsRenderAssinaturas(datas);
+      toast(`✅ ${_ddsPartic.length} participante(s) sincronizado(s)!`);
+    }catch(e){
+      console.error(e);
+      toast("Erro ao sincronizar: "+e.message, false);
+    }finally{
+      if(btn){ btn.disabled=false; btn.textContent="🔄 Sincronizar participantes do ponto"; }
+    }
+  }
+
+  // ── Salvar DDS ───────────────────────────────────────────
+  async function ddsSalvarSemana(){
+    if(!_ddsObraId){ toast("Selecione uma obra.", false); return; }
+    const sem = $("ddsSemana")?.value || _ddsSemanaAtual();
+    _ddsSemana = sem;
+
+    // Coletar temas editados
+    const temasEls = $("ddsTemasLista")?.querySelectorAll(".dds-tema-card") || [];
+    const temas = Array.from(temasEls).map((card, i)=>{
+      const tituloEl   = card.querySelector(".dds-tema-titulo");
+      const conteudoEl = card.querySelector(".dds-tema-conteudo");
+      return {
+        dia:     _ddsTemas[i]?.dia || "",
+        titulo:  tituloEl?.value   || tituloEl?.textContent || "",
+        conteudo:conteudoEl?.value || conteudoEl?.textContent || "",
+      };
+    });
+
+    const btn = $("btnDdsSalvar");
+    if(btn){ btn.disabled=true; btn.textContent="⏳ Salvando..."; }
+
+    try{
+      const payload = {
+        semana:  sem,
+        obraId:  _ddsObraId,
+        obraNome:_ddsObraNome,
+        condutor:{
+          tipo:  $("ddsTipoCondutor")?.value  || "responsavel",
+          nome:  $("ddsCondutorNome")?.value  || "",
+          cargo: $("ddsCondutorCargo")?.value || "",
+        },
+        atividade:    ($("ddsAtividade")?.value || "").trim(),
+        local:        ($("ddsLocal")?.value     || "").trim(),
+        obs:          ($("ddsObs")?.value       || "").trim(),
+        temas,
+        participantes:_ddsPartic,
+        status:       _ddsStatus,
+        atualizadoEm: serverTimestamp(),
+        atualizadoPor:currentUser?.uid || null,
+      };
+      // Se nunca foi salvo, adiciona criadoEm
+      const existing = await getDoc(doc(db,"obras",_ddsObraId,"dds",sem));
+      if(!existing.exists()) payload.criadoEm = serverTimestamp();
+
+      await setDoc(doc(db,"obras",_ddsObraId,"dds",sem), payload, {merge:true});
+      _ddsTemas = temas;
+      toast("✅ DDS salvo com sucesso!");
+      _ddsRenderStatus();
+    }catch(e){
+      console.error(e);
+      toast("❌ Erro ao salvar: "+e.message, false);
+    }finally{
+      if(btn){ btn.disabled=false; btn.textContent="💾 Salvar DDS"; }
+    }
+  }
+
+  // ── Render temas ─────────────────────────────────────────
+  function _ddsRenderTemas(){
+    const el = $("ddsTemasLista"); if(!el) return;
+    const DIAS = ["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"];
+    const EMOJIS = ["🟢","🔵","🟡","🟠","🔴"];
+
+    if(!_ddsTemas.length){
+      el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:.85rem;padding:32px">
+        <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+        Informe a atividade principal e clique em<br><strong>Gerar 5 temas por IA</strong>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = DIAS.map((dia, i)=>{
+      const t = _ddsTemas[i] || {dia, titulo:"", conteudo:""};
+      return `
+      <div class="dds-tema-card">
+        <div style="display:flex;align-items:center;margin-bottom:10px">
+          <span class="dds-tema-num">${i+1}</span>
+          <div>
+            <div style="font-weight:700;font-size:.82rem;color:var(--brand)">${EMOJIS[i]} ${dia}</div>
+          </div>
+        </div>
+        <label style="margin-top:0;font-size:.78rem">Título do tema</label>
+        <input class="dds-tema-titulo" type="text" value="${(t.titulo||"").replace(/"/g,"&quot;")}" placeholder="Ex: Uso correto de EPI no trabalho em altura" style="margin-bottom:8px">
+        <label style="font-size:.78rem">Conteúdo / Orientações</label>
+        <textarea class="dds-tema-conteudo" rows="3" placeholder="Detalhe o tema, riscos envolvidos e boas práticas...">${t.conteudo||""}</textarea>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Render participantes ──────────────────────────────────
+  function _ddsRenderParticipantes(){
+    const el = $("ddsPartLista"); if(!el) return;
+    const count = $("ddsPartCount");
+    if(count) count.textContent = _ddsPartic.length;
+
+    if(!_ddsPartic.length){
+      el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:.82rem;padding:16px">
+        Selecione a semana e clique em<br><strong>Sincronizar participantes do ponto</strong>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = _ddsPartic.map(p=>{
+      const dias = (p.diasPresente||[]).length;
+      return `
+      <div class="dds-part-row ${dias>0?"dds-assinado":""}">
+        <img class="dds-part-foto" src="${p.fotoUrl||""}" alt="" onerror="this.style.display='none'">
+        <div class="dds-part-info">
+          <div class="dds-part-nome">${p.nome||"—"}</div>
+          <div class="dds-part-sub">${p.funcao||"Colaborador"} · ${dias} dia${dias!==1?"s":""} presente${dias!==1?"s":""}</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Render assinaturas por dia ────────────────────────────
+  function _ddsRenderAssinaturas(datas){
+    const el = $("ddsAssinaturasDias"); if(!el) return;
+    const card = $("ddsAssinaturasCard"); if(card) card.style.display="";
+    const DIAS_LABEL = ["Segunda","Terça","Quarta","Quinta","Sexta"];
+
+    el.innerHTML = datas.map((data, i)=>{
+      const label = DIAS_LABEL[i];
+      const presentes = _ddsPartic.filter(p=>(p.diasPresente||[]).includes(data));
+      if(!presentes.length) return `
+        <div style="margin-bottom:14px">
+          <div style="font-weight:600;font-size:.84rem;color:var(--muted);margin-bottom:6px">${label} <span style="font-size:.74rem">(${data})</span> — sem registros</div>
+        </div>`;
+
+      const fotos = presentes.map(p=>{
+        const fotoAssin = p.fotosPonto?.[data] || "";
+        return `<div style="text-align:center;min-width:72px">
+          ${fotoAssin
+            ? `<img src="${fotoAssin}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid #10b981" alt="${p.nome||""}">`
+            : `<div style="width:64px;height:64px;border-radius:8px;background:#f3f4f6;border:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;font-size:1.4rem">👤</div>`}
+          <div style="font-size:.64rem;color:var(--muted);margin-top:4px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(p.nome||"—").split(" ")[0]}</div>
+        </div>`;
+      }).join("");
+
+      return `
+      <div style="margin-bottom:16px">
+        <div style="font-weight:700;font-size:.84rem;color:var(--brand);margin-bottom:8px;padding-bottom:4px;border-bottom:1.5px solid var(--border)">${label} <span style="font-size:.74rem;color:var(--muted)">(${data}) — ${presentes.length} presente${presentes.length!==1?"s":""}</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">${fotos}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Render status badge ───────────────────────────────────
+  function _ddsRenderStatus(){
+    const el = $("ddsStatusBadge"); if(!el) return;
+    el.style.display = "";
+    el.className = `dds-status-badge ${_ddsStatus==="finalizado"?"finalizado":"rascunho"}`;
+    el.textContent = _ddsStatus==="finalizado" ? "✅ Finalizado" : "📝 Rascunho";
+  }
+
+  window.App = {
     // Auth
     login, logout, togglePass, changePassword,
     // Navegação
@@ -10528,6 +11099,8 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     evolAbrirModalContrato, evolSalvarContrato, evolAddMarco, evolAnexarArquivo, evolTrocarArquivo, evolDeletarArquivo,
     evolAbrirParaColab,
     evolAbrirGaleria, evolFiltrarGaleria, evolVerFotoAmp, evolGerarRelatorio,
+    ddsInicializar, ddsSalvarSemana, ddsCarregarSemana, ddsTrocarObra,
+    ddsGerarTemas, ddsAtualizarCondutor, ddsSincronizarParticipantes,
     visitanteInicializar, vFiltrarGaleria, vVerFotoAmp, vVerClimaAmp, vFiltrarGrupo,
     vApagarFoto, vTrocarFoto,
     evolAbrirDiario, evolSalvarDiario, evolCarregarDiarioData, evolAtualizarCamposDiario,
