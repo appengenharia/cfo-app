@@ -10848,7 +10848,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     $("ddsVazio").style.display   = obraId ? "none" : "";
     $("ddsPainel").style.display  = obraId ? ""     : "none";
     $("btnDdsSalvar").style.display    = obraId ? "" : "none";
-    $("btnDdsSincronizar").style.display = obraId ? "" : "none";
+    if($("btnDdsSincronizar")) $("btnDdsSincronizar").style.display = obraId ? "" : "none";
     if($("btnDdsPreview")) $("btnDdsPreview").style.display = obraId ? "" : "none";
     if($("ddsEmailCard")) $("ddsEmailCard").style.display = obraId ? "" : "none";
     if(!obraId){ _ddsObraId=""; return; }
@@ -10907,6 +10907,10 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     _ddsRenderTemas();
     _ddsRenderParticipantes();
     _ddsRenderStatus();
+    // Auto-sincronizar participantes do ponto se lista vazia
+    if(_ddsPartic.length === 0 && _ddsObraId && _ddsSemana){
+      try{ await ddsSincronizarParticipantes(); }catch(_){}
+    }
   }
 
   // ── Atualizar campos do condutor ─────────────────────────
@@ -11076,19 +11080,20 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         datas.push(d.toISOString().split("T")[0]);
       }
 
-      // Buscar pontos da semana para a obra
-      const q = query(collection(db,"pontos"),
-        where("obra_id","==",_ddsObraId),
-        where("data",">=",datas[0]),
-        where("data","<=",datas[4])
+      // Buscar pontos da semana para a obra (sem índice composto — filtra em JS)
+      const qPontos = query(
+        collection(db,"pontos"),
+        where("obra_id","==",_ddsObraId)
       );
-      const snap = await getDocs(q);
+      const snap = await getDocs(qPontos);
 
-      // Agrupar por colaborador
-      const mapa = {}; // uid → {nome, funcao, fotoUrl, diasPresente:[data,...], fotos:{data:url}}
-      snap.forEach(d=>{
-        const p = d.data();
-        if(!p.uid) return;
+      // Agrupar por colaborador — filtra datas em JS
+      const mapa = {};
+      snap.forEach(docSnap=>{
+        const p = docSnap.data();
+        if(!p.uid || !p.data) return;
+        // Filtrar pela semana
+        if(p.data < datas[0] || p.data > datas[4]) return;
         if(!mapa[p.uid]){
           mapa[p.uid] = {
             uid:p.uid,
@@ -11099,9 +11104,12 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
             fotosPonto:{}
           };
         }
-        mapa[p.uid].diasPresente.push(p.data);
-        // Foto de entrada como "assinatura"
-        if(p.fotoEntrada) mapa[p.uid].fotosPonto[p.data] = p.fotoEntrada;
+        if(!mapa[p.uid].diasPresente.includes(p.data))
+          mapa[p.uid].diasPresente.push(p.data);
+        // Foto de entrada como presença — usar a melhor disponível
+        const melhorFoto = p.fotoEntrada || p.fotoRetorno || p.fotoAlmoco || p.fotoSaida || "";
+        if(melhorFoto && !mapa[p.uid].fotosPonto[p.data])
+          mapa[p.uid].fotosPonto[p.data] = melhorFoto;
       });
 
       // Buscar fotos de perfil dos usuários
