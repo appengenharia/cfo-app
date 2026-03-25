@@ -1952,22 +1952,31 @@
         <span id="evolRegUnidTxt" style="font-size:.9rem;color:var(--muted);white-space:nowrap;font-weight:700;min-width:34px"></span>
       </div>
       <div id="evolRegPreview" style="margin-top:6px;min-height:21px;font-size:.8rem;font-weight:600;padding:5px 9px;border-radius:7px;background:transparent"></div>
-      <label style="margin-top:11px">📷 Foto <span style="color:var(--muted);font-weight:400">(recomendada)</span></label>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <label style="margin:0;flex:1;cursor:pointer">
-          <input type="radio" name="evolRegTipoFoto" id="evolRegFotoAntes" value="antes" style="width:auto;margin-right:5px" checked>
-          <span style="font-size:.82rem;font-weight:600;color:var(--accent)">📸 Antes</span>
-        </label>
-        <label style="margin:0;flex:1;cursor:pointer">
-          <input type="radio" name="evolRegTipoFoto" id="evolRegFotoDepois" value="depois" style="width:auto;margin-right:5px">
-          <span style="font-size:.82rem;font-weight:600;color:var(--success)">✅ Depois</span>
-        </label>
+      <label style="margin-top:11px">📷 Fotos <span style="color:var(--muted);font-weight:400">(antes e/ou depois)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+        <!-- ANTES -->
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--accent);margin-bottom:5px">📸 Antes</div>
+          <div style="border:2px dashed #fca5a5;border-radius:10px;padding:8px;text-align:center;cursor:pointer;background:#fff5f5;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center" onclick="document.getElementById('evolRegFotoInputAntes').click()">
+            <div id="evolRegFotoPreviewAntes" style="display:none"><img id="evolRegFotoImgAntes" style="max-height:90px;border-radius:7px;max-width:100%" alt=""></div>
+            <div id="evolRegFotoPlaceholderAntes" style="color:#f87171;font-size:.75rem">Toque para selecionar</div>
+          </div>
+          <input type="file" id="evolRegFotoInputAntes" accept="image/*" style="display:none" onchange="App.evolFotoSel('antes')">
+          <button type="button" id="evolRegRemoverAntes" onclick="App.evolFotoRemover('antes')" style="display:none;margin-top:4px;background:none;border:none;color:var(--danger);font-size:.72rem;cursor:pointer;width:100%">🗑️ Remover</button>
+        </div>
+        <!-- DEPOIS -->
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--success);margin-bottom:5px">✅ Depois</div>
+          <div style="border:2px dashed #6ee7b7;border-radius:10px;padding:8px;text-align:center;cursor:pointer;background:#f0fdf4;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center" onclick="document.getElementById('evolRegFotoInputDepois').click()">
+            <div id="evolRegFotoPreviewDepois" style="display:none"><img id="evolRegFotoImgDepois" style="max-height:90px;border-radius:7px;max-width:100%" alt=""></div>
+            <div id="evolRegFotoPlaceholderDepois" style="color:#10b981;font-size:.75rem">Toque para selecionar</div>
+          </div>
+          <input type="file" id="evolRegFotoInputDepois" accept="image/*" style="display:none" onchange="App.evolFotoSel('depois')">
+          <button type="button" id="evolRegRemoverDepois" onclick="App.evolFotoRemover('depois')" style="display:none;margin-top:4px;background:none;border:none;color:var(--danger);font-size:.72rem;cursor:pointer;width:100%">🗑️ Remover</button>
+        </div>
       </div>
-      <div id="evolRegFotoArea" style="border:2px dashed var(--border);border-radius:10px;padding:11px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('evolRegFotoInput').click()">
-        <div id="evolRegFotoPreview" style="display:none"><img id="evolRegFotoImg" style="max-height:110px;border-radius:7px;max-width:100%" alt=""></div>
-        <div id="evolRegFotoPlaceholder" style="color:var(--muted);font-size:.8rem">Toque para foto do serviço</div>
-      </div>
-      <input type="file" id="evolRegFotoInput" accept="image/*" capture="environment" style="display:none" onchange="App.evolFotoSel()">
+      <!-- Manter compatibilidade com código legado -->
+      <input type="hidden" id="evolRegFotoInput">
       <label style="margin-top:9px">Obs. <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
       <textarea id="evolRegObs" rows="2" placeholder="Detalhes do avanço..."></textarea>
       <div class="msg" id="evolRegMsg"></div>
@@ -4044,8 +4053,19 @@ async function _eSnapshotHist(id,g){
     $("evolRegUnidTxt").textContent=s.unidade||"un";
     $("evolRegQtd").value=""; $("evolRegObs").value="";
     $("evolRegPreview").textContent=""; $("evolRegPreview").style.background="transparent";
-    setMsg("evolRegMsg",""); _eFotoB64=null;
-    $("evolRegFotoImg").src=""; $("evolRegFotoPreview").style.display="none"; $("evolRegFotoPlaceholder").style.display="";
+    setMsg("evolRegMsg",""); _eFotoB64=null; _eFotoB64Depois=null;
+    // Resetar foto antes
+    if($("evolRegFotoImgAntes"))   $("evolRegFotoImgAntes").src="";
+    if($("evolRegFotoPreviewAntes"))  $("evolRegFotoPreviewAntes").style.display="none";
+    if($("evolRegFotoPlaceholderAntes")) $("evolRegFotoPlaceholderAntes").style.display="";
+    if($("evolRegRemoverAntes"))   $("evolRegRemoverAntes").style.display="none";
+    if($("evolRegFotoInputAntes")) $("evolRegFotoInputAntes").value="";
+    // Resetar foto depois
+    if($("evolRegFotoImgDepois"))  $("evolRegFotoImgDepois").src="";
+    if($("evolRegFotoPreviewDepois")) $("evolRegFotoPreviewDepois").style.display="none";
+    if($("evolRegFotoPlaceholderDepois")) $("evolRegFotoPlaceholderDepois").style.display="";
+    if($("evolRegRemoverDepois"))  $("evolRegRemoverDepois").style.display="none";
+    if($("evolRegFotoInputDepois")) $("evolRegFotoInputDepois").value="";
 
     const pct=_ePctSvc(uid,sid), qe=_eQtdExec(uid,sid), qt=Number(s.qtdTotal)||1;
     $("evolRegBarAtual").style.width=pct.toFixed(1)+"%";
@@ -4065,9 +4085,47 @@ async function _eSnapshotHist(id,g){
     $("modalEvolReg").classList.remove("hidden");
   }
 
-  function evolFotoSel(){
-    const f=$("evolRegFotoInput")?.files?.[0]; if(!f) return;
-    const r=new FileReader(); r.onload=e=>{ _eFotoB64=e.target.result; $("evolRegFotoImg").src=e.target.result; $("evolRegFotoPreview").style.display=""; $("evolRegFotoPlaceholder").style.display="none"; }; r.readAsDataURL(f);
+  function evolFotoSel(tipo){
+    tipo = tipo || "antes";
+    const inputId = tipo==="depois" ? "evolRegFotoInputDepois" : "evolRegFotoInputAntes";
+    const f=$(inputId)?.files?.[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=e=>{
+      const b64 = e.target.result;
+      if(tipo==="depois"){
+        _eFotoB64Depois = b64;
+        $("evolRegFotoImgDepois").src=b64;
+        $("evolRegFotoPreviewDepois").style.display="";
+        $("evolRegFotoPlaceholderDepois").style.display="none";
+        $("evolRegRemoverDepois").style.display="";
+      } else {
+        _eFotoB64 = b64;
+        $("evolRegFotoImgAntes").src=b64;
+        $("evolRegFotoPreviewAntes").style.display="";
+        $("evolRegFotoPlaceholderAntes").style.display="none";
+        $("evolRegRemoverAntes").style.display="";
+      }
+    };
+    r.readAsDataURL(f);
+  }
+
+  function evolFotoRemover(tipo){
+    tipo = tipo || "antes";
+    if(tipo==="depois"){
+      _eFotoB64Depois=null;
+      $("evolRegFotoInputDepois").value="";
+      if($("evolRegFotoImgDepois"))   $("evolRegFotoImgDepois").src="";
+      $("evolRegFotoPreviewDepois").style.display="none";
+      $("evolRegFotoPlaceholderDepois").style.display="";
+      $("evolRegRemoverDepois").style.display="none";
+    } else {
+      _eFotoB64=null;
+      $("evolRegFotoInputAntes").value="";
+      if($("evolRegFotoImgAntes"))   $("evolRegFotoImgAntes").src="";
+      $("evolRegFotoPreviewAntes").style.display="none";
+      $("evolRegFotoPlaceholderAntes").style.display="";
+      $("evolRegRemoverAntes").style.display="none";
+    }
   }
 
   async function evolSalvarReg() {
@@ -4085,14 +4143,18 @@ async function _eSnapshotHist(id,g){
       const hoje=new Date().toISOString().split("T")[0];
       const k=uid+"_"+sid;
 
-      let fotoUrl="";
-      if(_eFotoB64){
+      // Upload foto ANTES
+      let fotoUrl="", fotoUrlDepois="";
+      const _uploadFoto = async(b64)=>{
+        if(!b64) return "";
         try{
-          const fd=new FormData(); fd.append("file",_eFotoB64); fd.append("upload_preset",CLOUDINARY_PRESET); fd.append("folder","evolucao");
+          const fd=new FormData(); fd.append("file",b64); fd.append("upload_preset",CLOUDINARY_PRESET); fd.append("folder","evolucao");
           const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`,{method:"POST",body:fd});
-          const data=await res.json(); fotoUrl=data.secure_url||"";
-        }catch(e){ console.warn(e); }
-      }
+          const data=await res.json(); return data.secure_url||"";
+        }catch(e){ console.warn(e); return ""; }
+      };
+      fotoUrl       = await _uploadFoto(_eFotoB64);
+      fotoUrlDepois = await _uploadFoto(_eFotoB64Depois);
 
       await setDoc(doc(db,"obras",_eObraId,"evolProgresso",k),
         {unidId:uid,svcId:sid,pct:np,qtdExec:nq,atualizadoEm:serverTimestamp()},{merge:true});
@@ -4101,7 +4163,8 @@ async function _eSnapshotHist(id,g){
         unidId:uid,unidNome:u.nome,svcId:sid,svcDesc:s.desc,
         data:hoje,qtdHoje:qh,qtdExec:nq,qtdTotal:qt,
         pctAntes:_ePctSvc(uid,sid),pctDepois:np,obs,fotoUrl,
-        tipoFoto: document.querySelector('input[name="evolRegTipoFoto"]:checked')?.value || "antes",
+        fotoUrlDepois,
+        tipoFoto: fotoUrl&&fotoUrlDepois?"ambos":fotoUrl?"antes":fotoUrlDepois?"depois":"",
         criadoPor:currentUser?.uid||pontoUser?.uid||"",criadoEm:serverTimestamp()
       });
 
@@ -11864,7 +11927,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     evolAddGrupo, evolAddUnidade, evolMostrarSerie, evolConfirmarSerie, _eSyncGrupsSel,
     evolAddSvc, evolAnalisarIA,
     evolAbrirUnidade, evolReabrirUnidade,
-    evolAbrirReg, evolFotoSel, evolSalvarReg,
+    evolAbrirReg, evolFotoSel, evolFotoRemover, evolSalvarReg,
     evolAbrirModalContrato, evolSalvarContrato, evolAddMarco, evolAnexarArquivo, evolTrocarArquivo, evolDeletarArquivo,
     evolAbrirParaColab,
     evolAbrirGaleria, evolFiltrarGaleria, evolVerFotoAmp, evolGerarRelatorio,
