@@ -11412,21 +11412,35 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const brToIso=(br)=>{ const [dd,mm,yyyy]=br.split("/"); return `${yyyy}-${mm}-${dd}`; };
 
     // Carregar imagem como base64 via canvas
+    // Carregar imagem via fetch (contorna CORS do canvas)
     const imgToB64=async(url)=>{
       if(!url || !url.startsWith("http")) return null;
-      return new Promise(res=>{
-        const img=new Image(); img.crossOrigin="anonymous";
-        img.onload=()=>{
-          try{
-            const c=document.createElement("canvas"); c.width=img.width; c.height=img.height;
-            c.getContext("2d").drawImage(img,0,0);
-            res(c.toDataURL("image/png"));
-          }catch(_){ res(null); }
-        };
-        img.onerror=()=>res(null);
-        img.src=url;
-        setTimeout(()=>res(null),4000);
-      });
+      try{
+        // Usar URL com parâmetro para forçar CORS no Cloudinary
+        const fetchUrl = url.includes("cloudinary.com") ? url.replace(/\/upload\//, "/upload/fl_attachment/") : url;
+        const resp = await fetch(url, {mode:"cors",cache:"no-store"});
+        if(!resp.ok) throw new Error("status "+resp.status);
+        const buf  = await resp.arrayBuffer();
+        const bytes= new Uint8Array(buf);
+        let bin=""; bytes.forEach(b=>bin+=String.fromCharCode(b));
+        const mime= resp.headers.get("content-type")||"image/jpeg";
+        return "data:"+mime+";base64,"+btoa(bin);
+      }catch(e){
+        // Fallback: canvas (pode falhar por CORS, mas tenta)
+        return new Promise(res=>{
+          const img=new Image(); img.crossOrigin="anonymous";
+          img.onload=()=>{
+            try{
+              const c=document.createElement("canvas"); c.width=img.width; c.height=img.height;
+              c.getContext("2d").drawImage(img,0,0);
+              res(c.toDataURL("image/jpeg",0.85));
+            }catch(_){ res(null); }
+          };
+          img.onerror=()=>res(null);
+          img.src=url+"?t="+Date.now();
+          setTimeout(()=>res(null),5000);
+        });
+      }
     };
 
     // Última foto válida do participante
@@ -11452,10 +11466,17 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       const fa=getAssinatura(p);
       if(fa && fa.startsWith("http")) urlsParaCarregar.add(fa);
     });
-    await Promise.all([...urlsParaCarregar].map(async url=>{
-      const b64=await imgToB64(url);
-      if(b64) fotoCache[url]=b64;
-    }));
+    // Pré-carregar fotos com timeout de 8s por imagem
+    const carregarFoto=async(url)=>{
+      const timeout=new Promise(r=>setTimeout(()=>r(null),8000));
+      const carrega=imgToB64(url);
+      const b64=await Promise.race([carrega,timeout]);
+      if(b64){ fotoCache[url]=b64; console.log("✅ Foto carregada:",url.slice(0,60)); }
+      else    { console.warn("❌ Foto não carregada:",url.slice(0,60)); }
+    };
+    console.log("DDS PDF: carregando",urlsParaCarregar.size,"imagens...");
+    await Promise.all([...urlsParaCarregar].map(url=>carregarFoto(url)));
+    console.log("DDS PDF: cache pronto. Fotos OK:",Object.keys(fotoCache).length);
 
     // ── Inicializar PDF A4 PAISAGEM ──────────────────────────
     const {jsPDF}=window.jspdf;
