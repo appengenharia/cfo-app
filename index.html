@@ -11172,11 +11172,18 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
       // Agrupar por colaborador — filtra datas em JS
       const mapa = {};
+      console.log("Total docs pontos brutos da obra:", snap.size);
       snap.forEach(docSnap=>{
         const p = docSnap.data();
         if(!p.uid || !p.data) return;
         // Filtrar pela semana
         if(p.data < datas[0] || p.data > datas[4]) return;
+        console.log("  Ponto filtrado:", p.uid, p.colaborador_nome, p.data,
+          "| fotoEntrada:", p.fotoEntrada?.slice(0,40)||"(vazio)",
+          "| fotoAlmoco:", p.fotoAlmoco?.slice(0,20)||"(vazio)",
+          "| fotoRetorno:", p.fotoRetorno?.slice(0,20)||"(vazio)",
+          "| fotoSaida:", p.fotoSaida?.slice(0,20)||"(vazio)"
+        );
         if(!mapa[p.uid]){
           mapa[p.uid] = {
             uid:p.uid,
@@ -11216,9 +11223,22 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       }
 
       _ddsPartic = Object.values(mapa).sort((a,b)=>a.nome.localeCompare(b.nome));
+
+      // ── DIAGNÓSTICO: logar o que foi encontrado ──
+      console.group("DDS Sync — diagnóstico");
+      console.log("Semana:", _ddsSemana, "| Datas:", datas);
+      console.log("Total docs pontos encontrados para a obra (filtrados pela semana):", _ddsPartic.length, "colaboradores");
+      _ddsPartic.forEach(p=>{
+        console.log("  Colaborador:", p.nome, "| diasPresente:", p.diasPresente, "| fotos:", p.fotosPonto);
+      });
+      console.groupEnd();
+
       _ddsRenderParticipantes();
       _ddsRenderAssinaturas(datas);
-      toast(`✅ ${_ddsPartic.length} participante(s) sincronizado(s)!`);
+
+      // Mostrar toast com diagnóstico
+      const totalFotos = _ddsPartic.reduce((acc,p)=>acc+Object.keys(p.fotosPonto||{}).length,0);
+      toast(`✅ ${_ddsPartic.length} participante(s) — ${totalFotos} foto(s) do ponto encontrada(s)`);
     }catch(e){
       console.error(e);
       toast("Erro ao sincronizar: "+e.message, false);
@@ -11368,150 +11388,263 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
 
   // ── Gerar PDF do DDS ──────────────────────────────────────
   async function _ddsGerarPDF(semana, obraId){
-    // Carregar dados salvos
-    const snap = await getDoc(doc(db,"obras",obraId,"dds",semana));
+    const snap=await getDoc(doc(db,"obras",obraId,"dds",semana));
     if(!snap.exists()) throw new Error("DDS não encontrado para a semana "+semana);
-    const d = snap.data();
-
-    // Dados da empresa contratada
-    let empNome = ""; let empCnpj = ""; let empLogoUrl = "";
+    const d=snap.data();
+    let empNome="",empCnpj="",empLogoUrl="";
     try{
-      const empSnap = await getDoc(doc(db,"configuracoes","empresa"));
-      if(empSnap.exists()){ empNome = empSnap.data().nome||""; empCnpj = empSnap.data().cnpj||""; empLogoUrl = empSnap.data().logoUrl||""; }
+      const es=await getDoc(doc(db,"configuracoes","empresa"));
+      if(es.exists()){ empNome=es.data().nome||""; empCnpj=es.data().cnpj||""; empLogoUrl=es.data().logoUrl||""; }
     }catch(_){}
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({orientation:"portrait", unit:"mm", format:"a4"});
-    const W=210, mg=14, mr=196;
+    // Calcular datas da semana
+    const [ano,semN]=semana.split("-W").map(Number);
+    const jan4=new Date(ano,0,4);
+    const seg=new Date(jan4); seg.setDate(jan4.getDate()-(jan4.getDay()||7)+1+(semN-1)*7);
+    const DS=[],DL=["SEG","TER","QUA","QUI","SEX"];
+    for(let i=0;i<5;i++){ const x=new Date(seg); x.setDate(seg.getDate()+i); DS.push(x.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"})); }
+    const semLbl=DS[0].slice(0,5)+" a "+DS[4];
+    const temas=d.temas||[], partic=d.participantes||[];
+    const decl=($("ddsDeclaracaoTexto")||{textContent:""}).textContent||
+      "DECLARO QUE RECEBI TREINAMENTO E INFORMAÇÕES DE SEGURANÇA DO TRABALHO, HIGIENE DO TRABALHO E MEIO AMBIENTE, CONFORME PROCEDIMENTOS REALIZADOS NESTA DATA.";
 
-    // Formatar semana legível
-    const [ano, semN] = semana.split("-W").map(Number);
-    const jan4   = new Date(ano, 0, 4);
-    const inicio = new Date(jan4);
-    inicio.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (semN-1)*7);
-    const fim    = new Date(inicio); fim.setDate(inicio.getDate()+4);
-    const fmtD   = dt => dt.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-    const semLabel = `${fmtD(inicio)} a ${fmtD(fim)}`;
+    // Converter data BR → ISO
+    const brToIso=(br)=>{ const [dd,mm,yyyy]=br.split("/"); return `${yyyy}-${mm}-${dd}`; };
 
-    const azul   = [15,52,96];
-    const branco = [255,255,255];
-    const cinza  = [107,114,128];
-    const lv     = [240,242,247];
-
-    // ── CABEÇALHO ──────────────────────────────────────────
-    pdf.setFillColor(...azul); pdf.rect(0,0,W,32,"F");
-    pdf.setTextColor(...branco);
-    pdf.setFontSize(16); pdf.setFont("helvetica","bold");
-    pdf.text("DDS — DIÁLOGO DIÁRIO DE SEGURANÇA", W/2, 12, {align:"center"});
-    pdf.setFontSize(9);  pdf.setFont("helvetica","normal");
-    pdf.text(`Obra: ${d.obraNome||"—"}  ·  Semana: ${semLabel}`, W/2, 19, {align:"center"});
-    pdf.setFontSize(8);
-    pdf.text(`Condutor: ${d.condutor?.nome||"—"}  ·  ${d.condutor?.cargo||""}`, W/2, 25, {align:"center"});
-    pdf.setTextColor(0,0,0);
-
-    let y = 37;
-
-    // ── ATIVIDADE / LOCAL ──
-    pdf.setFillColor(...lv); pdf.roundedRect(mg, y, W-mg*2, 14, 2, 2, "F");
-    pdf.setFontSize(8); pdf.setFont("helvetica","bold"); pdf.setTextColor(...cinza);
-    pdf.text("ATIVIDADE PRINCIPAL", mg+3, y+5);
-    pdf.text("ÁREA / LOCAL", mg+100, y+5);
-    pdf.setFont("helvetica","normal"); pdf.setTextColor(0,0,0); pdf.setFontSize(9);
-    pdf.text((d.atividade||"—").slice(0,50), mg+3, y+11);
-    pdf.text((d.local||"—").slice(0,30), mg+100, y+11);
-    y += 18;
-
-    // ── 5 TEMAS ──
-    pdf.setFontSize(10); pdf.setFont("helvetica","bold"); pdf.setTextColor(...azul);
-    pdf.text("TEMAS DA SEMANA", mg, y); y+=5;
-    pdf.setDrawColor(200,200,200); pdf.setLineWidth(0.3); pdf.line(mg, y, mr, y); y+=3;
-
-    const temas = d.temas || [];
-    const EMOJIS_DIA = ["Seg","Ter","Qua","Qui","Sex"];
-    temas.forEach((t, i)=>{
-      if(y > 240){ pdf.addPage(); y = mg; }
-      pdf.setFillColor(i%2===0?248:255, i%2===0?249:255, i%2===0?252:255);
-      const conteudoLines = pdf.splitTextToSize(t.conteudo||"", W-mg*2-22);
-      const hBox = 8 + conteudoLines.length * 4.5;
-      pdf.roundedRect(mg, y, W-mg*2, hBox, 2, 2, "F");
-      // Marcador do dia
-      pdf.setFillColor(...azul);
-      pdf.roundedRect(mg+2, y+3, 18, 6, 1, 1, "F");
-      pdf.setTextColor(...branco); pdf.setFontSize(7); pdf.setFont("helvetica","bold");
-      pdf.text(EMOJIS_DIA[i]||"", mg+11, y+7.2, {align:"center"});
-      pdf.setTextColor(0,0,0);
-      // Título
-      pdf.setFontSize(8.5); pdf.setFont("helvetica","bold");
-      pdf.text((t.titulo||"").slice(0,70), mg+23, y+6);
-      // Conteúdo
-      pdf.setFontSize(7.8); pdf.setFont("helvetica","normal"); pdf.setTextColor(...cinza);
-      pdf.text(conteudoLines, mg+23, y+11);
-      pdf.setTextColor(0,0,0);
-      y += hBox + 3;
-    });
-    y += 3;
-
-    // ── PARTICIPANTES E ASSINATURAS ──
-    if(y > 220){ pdf.addPage(); y = mg; }
-    pdf.setFontSize(10); pdf.setFont("helvetica","bold"); pdf.setTextColor(...azul);
-    pdf.text("PARTICIPANTES E ASSINATURAS", mg, y); y+=5;
-    pdf.setDrawColor(200,200,200); pdf.line(mg, y, mr, y); y+=4;
-
-    // Cabeçalho tabela
-    const dias = ["Segunda","Terça","Quarta","Quinta","Sexta"];
-    pdf.setFontSize(7.5); pdf.setFont("helvetica","bold"); pdf.setTextColor(...cinza);
-    pdf.text("Nome / Função", mg, y);
-    dias.forEach((dia, i)=> pdf.text(dia, mg+80+i*22, y, {align:"center"}));
-    y+=3; pdf.setDrawColor(200,200,200); pdf.line(mg, y, mr, y); y+=3;
-
-    const parts = d.participantes || [];
-    parts.forEach((p, pi)=>{
-      if(y > 270){ pdf.addPage(); y = mg; }
-      pdf.setFontSize(7); pdf.setFont("helvetica","normal"); pdf.setTextColor(0,0,0);
-      if(pi%2===0){ pdf.setFillColor(248,249,252); pdf.rect(mg, y-2, W-mg*2, 7, "F"); }
-      pdf.text((p.nome||"—").slice(0,25), mg, y+3);
-      pdf.setFontSize(6); pdf.setTextColor(...cinza);
-      pdf.text(p.funcao||"", mg, y+6.5);
-      pdf.setTextColor(0,0,0);
-      // Marcações de presença por dia
-      dias.forEach((dia, i)=>{
-        const cx = mg+80+i*22;
-        const presente = (p.diasPresente||[]).some(dt=>{
-          try{ return new Date(dt+"T12:00:00").getDay()===i+1; }catch(_){return false;}
-        });
-        if(presente){
-          pdf.setFillColor(16,185,129); pdf.circle(cx, y+3, 2.5, "F");
-          pdf.setTextColor(...branco); pdf.setFontSize(6); pdf.setFont("helvetica","bold");
-          pdf.text("✓", cx, y+4.5, {align:"center"});
-        } else {
-          pdf.setDrawColor(200,200,200); pdf.circle(cx, y+3, 2.5, "D");
-        }
-        pdf.setTextColor(0,0,0); pdf.setFont("helvetica","normal");
+    // Carregar imagem como base64 via canvas
+    const imgToB64=async(url)=>{
+      if(!url || !url.startsWith("http")) return null;
+      return new Promise(res=>{
+        const img=new Image(); img.crossOrigin="anonymous";
+        img.onload=()=>{
+          try{
+            const c=document.createElement("canvas"); c.width=img.width; c.height=img.height;
+            c.getContext("2d").drawImage(img,0,0);
+            res(c.toDataURL("image/png"));
+          }catch(_){ res(null); }
+        };
+        img.onerror=()=>res(null);
+        img.src=url;
+        setTimeout(()=>res(null),4000);
       });
-      y += 9;
+    };
+
+    // Última foto válida do participante
+    const getAssinatura=(p)=>{
+      const dias=(p.diasPresente||[]).slice().sort().reverse();
+      for(const dia of dias){
+        const f=(p.fotosPonto||{})[dia]||"";
+        if(f && f.startsWith("http")) return f;
+      }
+      return p.fotoUrl||"";
+    };
+
+    // ── Pré-carregar TODAS as fotos em paralelo ──────────────
+    const fotoCache={};
+    const urlsParaCarregar=new Set();
+    if(empLogoUrl) urlsParaCarregar.add(empLogoUrl);
+    partic.forEach(p=>{
+      DL.forEach((_,di)=>{
+        const iso=brToIso(DS[di]);
+        const f=(p.fotosPonto||{})[iso]||"";
+        if(f && f.startsWith("http")) urlsParaCarregar.add(f);
+      });
+      const fa=getAssinatura(p);
+      if(fa && fa.startsWith("http")) urlsParaCarregar.add(fa);
     });
-    y += 5;
+    await Promise.all([...urlsParaCarregar].map(async url=>{
+      const b64=await imgToB64(url);
+      if(b64) fotoCache[url]=b64;
+    }));
 
-    // ── OBSERVAÇÕES ──
-    if(d.obs){
-      if(y > 255){ pdf.addPage(); y = mg; }
-      pdf.setFontSize(8); pdf.setFont("helvetica","bold"); pdf.setTextColor(...azul);
-      pdf.text("OBSERVAÇÕES", mg, y); y+=4;
-      pdf.setFont("helvetica","normal"); pdf.setTextColor(...cinza); pdf.setFontSize(7.5);
-      const obsLines = pdf.splitTextToSize(d.obs, W-mg*2);
-      pdf.text(obsLines, mg, y); y += obsLines.length*4.5+4;
+    // ── Inicializar PDF A4 PAISAGEM ──────────────────────────
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+    const W=297,H=210,mg=8;
+    const azul=[15,52,96],branco=[255,255,255],preto=[0,0,0],
+          cinzaL=[240,242,247],cinzaM=[180,185,195],cinzaT=[90,95,105];
+
+    const fillR=(x,y,w,h,col)=>{ pdf.setFillColor(...col); pdf.rect(x,y,w,h,"F"); };
+    const strkR=(x,y,w,h,col=cinzaM,lw=0.3)=>{ pdf.setDrawColor(...col); pdf.setLineWidth(lw); pdf.rect(x,y,w,h,"S"); };
+    const hLine=(y,x1=mg,x2=W-mg,lw=0.3)=>{ pdf.setDrawColor(...cinzaM); pdf.setLineWidth(lw); pdf.line(x1,y,x2,y); };
+    const vLine=(x,y1,y2,lw=0.3)=>{ pdf.setDrawColor(...cinzaM); pdf.setLineWidth(lw); pdf.line(x,y1,x,y2); };
+    const addImg=(url,x,y,w,h)=>{
+      const b64=fotoCache[url];
+      if(!b64) return;
+      try{ pdf.addImage(b64,"PNG",x,y,w,h,"","FAST"); }catch(_){}
+    };
+
+    // ── CABEÇALHO ────────────────────────────────────────────
+    const logoW=42,hdrH=22;
+    fillR(mg,mg,logoW,hdrH,branco); strkR(mg,mg,logoW,hdrH);
+    if(empLogoUrl && fotoCache[empLogoUrl]){
+      try{
+        const b64=fotoCache[empLogoUrl];
+        const img=new Image(); img.src=empLogoUrl;
+        const sc=Math.min((logoW-4)/Math.max(img.naturalWidth||100,1),(hdrH-4)/Math.max(img.naturalHeight||50,1));
+        const dw=Math.min(img.naturalWidth*sc,logoW-4), dh=Math.min(img.naturalHeight*sc,hdrH-4);
+        pdf.addImage(b64,"PNG",mg+(logoW-dw)/2,mg+(hdrH-dh)/2,dw,dh,"","FAST");
+      }catch(_){}
+    }
+    const titX=mg+logoW,titW=W-mg*2-logoW;
+    fillR(titX,mg,titW,hdrH,cinzaL); strkR(titX,mg,titW,hdrH);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(12); pdf.setTextColor(...azul);
+    pdf.text("REGISTRO DO DIÁLOGO DIÁRIO DE SEGURANÇA - DDS",titX+titW/2,mg+8,{align:"center"});
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7); pdf.setTextColor(...cinzaT);
+    if(empNome) pdf.text(empNome+(empCnpj?" · CNPJ: "+empCnpj:""),titX+titW/2,mg+14,{align:"center"});
+    pdf.text("Semana: "+semLbl,titX+titW/2,mg+19,{align:"center"});
+
+    let y=mg+hdrH;
+
+    // ── RESPONSÁVEL + DIAS ───────────────────────────────────
+    const linH=26,infoW=70,colW=(W-mg*2-infoW)/5;
+    fillR(mg,y,infoW,linH,branco); strkR(mg,y,infoW,linH);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(7); pdf.setTextColor(...preto);
+    pdf.text("RESPONSÁVEL: "+(d.condutor&&d.condutor.nome||"—").slice(0,28),mg+2,y+5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(6.5); pdf.setTextColor(...cinzaT);
+    pdf.text("Cargo: "+((d.condutor&&d.condutor.cargo)||"").slice(0,28),mg+2,y+10);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(6.5); pdf.setTextColor(...preto);
+    pdf.text("EQUIPE:",mg+2,y+15);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(6); pdf.setTextColor(...cinzaT);
+    partic.slice(0,3).forEach((p,i)=>pdf.text((p.nome||"").split(" ").slice(0,2).join(" "),mg+2,y+19+i*3));
+    if(partic.length>3) pdf.text("+"+( partic.length-3)+" outros",mg+2,y+29);
+    if(d.local){ pdf.setFont("helvetica","bold"); pdf.setFontSize(6); pdf.setTextColor(...preto); pdf.text("ÁREA: "+(d.local||"").slice(0,28),mg+2,y+linH-2); }
+
+    DL.forEach((dia,i)=>{
+      const cx=mg+infoW+i*colW;
+      fillR(cx,y,colW,8,azul); strkR(cx,y,colW,linH);
+      pdf.setFont("helvetica","bold"); pdf.setFontSize(8); pdf.setTextColor(...branco);
+      pdf.text(dia,cx+colW/2,y+5.5,{align:"center"});
+      pdf.setFont("helvetica","normal"); pdf.setFontSize(6.5); pdf.setTextColor(...cinzaT);
+      pdf.text(DS[i],cx+colW/2,y+12,{align:"center"});
+      pdf.setFont("helvetica","normal"); pdf.setFontSize(5.5); pdf.setTextColor(...preto);
+      const tl=pdf.splitTextToSize((temas[i]&&temas[i].titulo||""),colW-2);
+      pdf.text(tl.slice(0,3),cx+colW/2,y+17,{align:"center"});
+    });
+    pdf.setTextColor(...preto); y+=linH;
+
+    // ── DECLARAÇÃO ────────────────────────────────────────────
+    fillR(mg,y,W-mg*2,8,cinzaL); strkR(mg,y,W-mg*2,8);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(6.5); pdf.setTextColor(...azul);
+    pdf.text(decl,W/2,y+5,{align:"center",maxWidth:W-mg*2-4});
+    pdf.setTextColor(...preto); y+=8;
+
+    // ── CABEÇALHO DA TABELA ──────────────────────────────────
+    const cNum=7,cNome=48,cCargo=24,cAssin=22;
+    const cDiaW=(W-mg*2-cNum-cNome-cCargo-cAssin)/5;
+    const cols=[cNum,cNome,cCargo,...Array(5).fill(cDiaW),cAssin];
+    const colX=[mg]; for(let i=0;i<cols.length-1;i++) colX.push(colX[i]+cols[i]);
+
+    const thH=12;
+    fillR(mg,y,W-mg*2,thH,azul);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(6.5); pdf.setTextColor(...branco);
+    const hdrs=["#","NOME:","CARGO",...DL,"Assinatura"];
+    hdrs.forEach((h2,i)=>{
+      pdf.text(h2,colX[i]+cols[i]/2,y+4.5,{align:"center"});
+      if(i>=3&&i<=7) pdf.text(DS[i-3],colX[i]+cols[i]/2,y+9,{align:"center"});
+    });
+    pdf.setTextColor(...preto); y+=thH;
+
+    // Sub-linha de temas
+    const thH2=7; fillR(mg,y,W-mg*2,thH2,cinzaL);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(5.5); pdf.setTextColor(...cinzaT);
+    DL.forEach((_,i)=>{ const t=(temas[i]&&temas[i].titulo||""); pdf.text(pdf.splitTextToSize(t,cDiaW-2)[0]||"",colX[3+i]+cDiaW/2,y+4.5,{align:"center"}); });
+    pdf.setTextColor(...preto); y+=thH2;
+
+    // ── LINHAS DOS PARTICIPANTES ─────────────────────────────
+    const rowH=16; // altura para caber foto 12x12
+
+    const renderRow=(py,p,ri)=>{
+      const bg=ri%2===0?branco:[248,249,252];
+      fillR(mg,py,W-mg*2,rowH,bg);
+      colX.forEach((cx,ci)=>{ if(ci>0) vLine(cx,py,py+rowH); });
+      hLine(py+rowH,mg,W-mg);
+
+      // Número, nome, cargo
+      pdf.setFont("helvetica","bold"); pdf.setFontSize(6.5); pdf.setTextColor(...preto);
+      pdf.text(String(ri+1),colX[0]+cNum/2,py+6,{align:"center"});
+      pdf.text((p.nome||"—").slice(0,22),colX[1]+2,py+6);
+      pdf.setFont("helvetica","normal"); pdf.setFontSize(5.5); pdf.setTextColor(...cinzaT);
+      pdf.text((p.funcao||"").slice(0,14),colX[1]+2,py+10);
+      pdf.setFont("helvetica","normal"); pdf.setFontSize(6); pdf.setTextColor(...preto);
+      pdf.text((p.funcao||"—").slice(0,13),colX[2]+2,py+6);
+
+      // Foto por dia (12x12mm centrada na célula)
+      DL.forEach((_,di)=>{
+        const cx2=colX[3+di];
+        const iso=brToIso(DS[di]);
+        const pres=(p.diasPresente||[]).includes(iso);
+        const fUrl=(p.fotosPonto||{})[iso]||"";
+        if(fUrl && fUrl.startsWith("http") && fotoCache[fUrl] && pres){
+          // Foto real
+          const fw=12,fh=12;
+          pdf.addImage(fotoCache[fUrl],"PNG",cx2+(cDiaW-fw)/2,py+(rowH-fh)/2,fw,fh,"","FAST");
+        } else if(pres){
+          // Presente sem foto — círculo verde com ✓
+          pdf.setFillColor(16,185,129); pdf.circle(cx2+cDiaW/2,py+rowH/2,2.8,"F");
+          pdf.setFont("helvetica","bold"); pdf.setFontSize(7); pdf.setTextColor(...branco);
+          pdf.text("✓",cx2+cDiaW/2,py+rowH/2+1.2,{align:"center"});
+          pdf.setTextColor(...preto);
+        } else {
+          // Ausente
+          pdf.setFont("helvetica","normal"); pdf.setFontSize(7); pdf.setTextColor(...cinzaM);
+          pdf.text("—",cx2+cDiaW/2,py+rowH/2+1,{align:"center"});
+          pdf.setTextColor(...preto);
+        }
+      });
+
+      // Coluna assinatura: última foto grande (14x14mm)
+      const fAssin=getAssinatura(p);
+      if(fAssin && fAssin.startsWith("http") && fotoCache[fAssin]){
+        const fw=14,fh=14;
+        pdf.addImage(fotoCache[fAssin],"PNG",colX[colX.length-1]+(cAssin-fw)/2,py+(rowH-fh)/2,fw,fh,"","FAST");
+      } else {
+        pdf.setFont("helvetica","normal"); pdf.setFontSize(6); pdf.setTextColor(...cinzaM);
+        pdf.text("—",colX[colX.length-1]+cAssin/2,py+rowH/2+1,{align:"center"});
+        pdf.setTextColor(...preto);
+      }
+    };
+
+    // Renderizar participantes
+    let rowCount=0;
+    for(let pi=0;pi<partic.length;pi++){
+      if(y+rowH>H-mg-16){
+        pdf.addPage([W,H],"landscape"); y=mg+10;
+        fillR(mg,y,W-mg*2,thH,azul);
+        pdf.setFont("helvetica","bold"); pdf.setFontSize(6.5); pdf.setTextColor(...branco);
+        hdrs.forEach((h2,i)=>{ pdf.text(h2,colX[i]+cols[i]/2,y+4.5,{align:"center"}); });
+        pdf.setTextColor(...preto); y+=thH;
+      }
+      renderRow(y,partic[pi],rowCount); y+=rowH; rowCount++;
+    }
+    // Linhas em branco até completar 10
+    while(rowCount<10 && y+rowH<=H-mg-16){
+      const bg=rowCount%2===0?branco:[248,249,252];
+      fillR(mg,y,W-mg*2,rowH,bg);
+      colX.forEach((cx,ci)=>{ if(ci>0) vLine(cx,y,y+rowH); }); hLine(y+rowH,mg,W-mg);
+      pdf.setFont("helvetica","normal"); pdf.setFontSize(6.5);
+      pdf.text(String(rowCount+1),colX[0]+cNum/2,y+6,{align:"center"});
+      y+=rowH; rowCount++;
     }
 
-    // ── RODAPÉ ──
-    const totalPags = pdf.internal.getNumberOfPages();
-    for(let i=1;i<=totalPags;i++){
-      pdf.setPage(i);
-      pdf.setFillColor(...azul); pdf.rect(0,285,W,12,"F");
-      pdf.setTextColor(...branco); pdf.setFontSize(7);
-      pdf.text(`GO — Gestão de Obras  ·  DDS — Diálogo Diário de Segurança  ·  ${semLabel}`, mg, 291);
-      pdf.text(`Pág. ${i}/${totalPags}`, mr, 291, {align:"right"});
-      if(empNome) pdf.text(empNome+(empCnpj?" · CNPJ: "+empCnpj:""), W/2, 295, {align:"center"});
+    // ── RODAPÉ ────────────────────────────────────────────────
+    const rodY=H-mg-14;
+    fillR(mg,rodY,W-mg*2,14,cinzaL); strkR(mg,rodY,W-mg*2,14);
+    vLine(mg+(W-mg*2)*0.55,rodY,rodY+14);
+
+    // Foto do responsável no rodapé
+    const respP=partic.find(p=>p.nome===(d.condutor&&d.condutor.nome));
+    const respFoto=respP?getAssinatura(respP):"";
+    if(respFoto && fotoCache[respFoto]){
+      pdf.addImage(fotoCache[respFoto],"PNG",mg+3,rodY+1,12,12,"","FAST");
     }
+    const textX=respFoto&&fotoCache[respFoto]?mg+18:mg+4;
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(7); pdf.setTextColor(...preto);
+    pdf.text("ASSINATURA DO RESPONSÁVEL: _____________________________",textX,rodY+5);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(6.5); pdf.setTextColor(...cinzaT);
+    pdf.text((d.condutor&&d.condutor.nome||"—")+" · CARGO: "+((d.condutor&&d.condutor.cargo)||"—"),textX,rodY+11);
+    pdf.setTextColor(...cinzaT); pdf.setFontSize(6);
+    pdf.text("GO — Gestão de Obras · DDS · "+semLbl+" · Gerado em "+new Date().toLocaleDateString("pt-BR"),W/2,rodY+12,{align:"center"});
 
     return pdf;
   }
