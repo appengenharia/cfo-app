@@ -11844,40 +11844,161 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     const temas=d.temas||[], partic=d.participantes||[];
     const decl=($("ddsDeclaracaoTexto")||{textContent:""}).textContent||
       "DECLARO QUE RECEBI TREINAMENTO E INFORMAÇÕES DE SEGURANÇA DO TRABALHO, HIGIENE DO TRABALHO E MEIO AMBIENTE, CONFORME PROCEDIMENTOS REALIZADOS NESTA DATA.";
+
+    // ── Descobrir a última foto de cada participante (coluna assinatura) ──
+    // Última foto da semana ou do último DDS
+    const getAssinatura = (p) => {
+      const diasOrdem = (p.diasPresente||[]).slice().sort().reverse();
+      for(const dia of diasOrdem){
+        const f = (p.fotosPonto||{})[dia]||"";
+        if(f && f.startsWith("http")) return f;
+      }
+      return p.fotoUrl||""; // foto do perfil como último fallback
+    };
+
+    // ── Converter data BR → ISO ──
+    const brToIso = (br) => { const [dd,mm,yyyy]=br.split("/"); return `${yyyy}-${mm}-${dd}`; };
+
     const parts=[];
     parts.push("<!DOCTYPE html><html><head><meta charset='utf-8'>");
-    parts.push("<style>@page{size:A4 landscape;margin:8mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}}*{box-sizing:border-box;font-family:Arial,sans-serif;margin:0;padding:0}body{background:#fff;font-size:8px}table{border-collapse:collapse;width:100%}td,th{border:.5px solid #d1d5db}.az{background:#0f3460;color:#fff}.cz{background:#f0f2f7}<" + "/style><" + "/head><body>");
-    parts.push("<div class='no-print' style='background:#0f3460;padding:8px 12px;display:flex;gap:8px;align-items:center;margin-bottom:8px'><span style='color:#fff;font-size:11px;flex:1'>GO — Gestão de Obras · DDS · "+semLbl+"<" + "/span><button onclick='window.print()' style='background:#e94560;border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer'>Imprimir / Salvar PDF<" + "/button><" + "/div>");
+    parts.push("<style>");
+    parts.push("@page{size:A4 landscape;margin:8mm}");
+    parts.push("@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}}");
+    parts.push("*{box-sizing:border-box;font-family:Arial,sans-serif;margin:0;padding:0}");
+    parts.push("body{background:#fff;font-size:8px}");
+    parts.push("table{border-collapse:collapse;width:100%}");
+    parts.push("td,th{border:.5px solid #d1d5db;vertical-align:middle}");
+    parts.push(".az{background:#0f3460;color:#fff}.cz{background:#f0f2f7}");
+    parts.push("img.assin{width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #d1d5db;display:block;margin:auto}");
+    parts.push("img.assin-lg{width:52px;height:52px;object-fit:cover;border-radius:6px;border:1.5px solid #0f3460;display:block;margin:auto}");
+    parts.push("<" + "/style><" + "/head><body>");
+
+    // Botão imprimir
+    parts.push("<div class='no-print' style='background:#0f3460;padding:8px 12px;display:flex;gap:8px;align-items:center;margin-bottom:8px'>");
+    parts.push("<span style='color:#fff;font-size:11px;flex:1'>GO — Gestão de Obras · DDS · "+semLbl+"<" + "/span>");
+    parts.push("<button onclick='window.print()' style='background:#e94560;border:none;color:#fff;padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer'>Imprimir / Salvar PDF<" + "/button><" + "/div>");
+
+    // ── CABEÇALHO (logo + título) ──
     parts.push("<table style='border:1.5px solid #0f3460'><tr>");
     parts.push("<td rowspan='2' style='width:13%;padding:4px;text-align:center;border-right:1px solid #0f3460'>");
     if(empLogoUrl) parts.push("<img src='"+empLogoUrl+"' style='max-width:90px;max-height:30px;object-fit:contain'>");
     else parts.push("<div style='font-size:9px;color:#6b7280;font-weight:700'>"+(empNome||"EMPRESA")+"<" + "/div>");
-    parts.push("<" + "/td><td colspan='7' class='cz' style='text-align:center;padding:6px'><div style='font-size:13px;font-weight:700;color:#0f3460'>REGISTRO DO DIÁLOGO DIÁRIO DE SEGURANÇA - DDS<" + "/div>");
+    parts.push("<" + "/td>");
+    parts.push("<td colspan='6' class='cz' style='text-align:center;padding:6px'>");
+    parts.push("<div style='font-size:13px;font-weight:700;color:#0f3460'>REGISTRO DO DIÁLOGO DIÁRIO DE SEGURANÇA - DDS<" + "/div>");
     if(empNome) parts.push("<div style='font-size:8px;color:#6b7280;margin-top:2px'>"+empNome+(empCnpj?" · CNPJ: "+empCnpj:"")+"<" + "/div>");
-    parts.push("<" + "/td><" + "/tr><tr><td colspan='7' class='cz' style='text-align:center;padding:3px;font-size:8px;color:#6b7280'>Semana: <strong style='color:#0f3460'>"+semLbl+"<" + "/strong><" + "/td><" + "/tr>");
-    parts.push("<tr style='vertical-align:top'><td rowspan='2' style='padding:5px 6px;width:13%;border-right:1px solid #0f3460'>");
+    parts.push("<" + "/td><" + "/tr><tr>");
+    parts.push("<td colspan='6' class='cz' style='text-align:center;padding:3px;font-size:8px;color:#6b7280'>Semana: <strong style='color:#0f3460'>"+semLbl+"<" + "/strong><" + "/td>");
+    parts.push("<" + "/tr><" + "/table>");
+
+    // ── LINHA RESPONSÁVEL + COLUNAS DOS DIAS (sem coluna Assinatura no header) ──
+    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'><tr style='vertical-align:top'>");
+    parts.push("<td rowspan='2' style='padding:5px 6px;width:13%;border-right:1px solid #0f3460'>");
     parts.push("<div style='font-size:8px'><strong>RESPONSÁVEL:</strong> "+(d.condutor&&d.condutor.nome||"—").slice(0,30)+"<" + "/div>");
     parts.push("<div style='font-size:7.5px;color:#6b7280;margin-top:2px'>"+((d.condutor&&d.condutor.cargo)||"").slice(0,30)+"<" + "/div>");
     parts.push("<div style='margin-top:6px;font-size:8px'><strong>EQUIPE:<" + "/strong><" + "/div><div style='font-size:7.5px;color:#374151;line-height:1.6'>");
     partic.slice(0,6).forEach(p=>parts.push((p.nome||"").split(" ").slice(0,3).join(" ")+"<br>"));
     if(partic.length>6) parts.push("<span style='color:#6b7280'>+"+( partic.length-6)+" outros<" + "/span>");
     parts.push("<" + "/div><div style='margin-top:6px;font-size:8px'><strong>ÁREA:<" + "/strong> "+(d.local||"—").slice(0,28)+"<" + "/div><" + "/td>");
+
+    // Colunas dos dias (5 colunas, sem coluna de assinatura no header)
     parts.push("<td colspan='5' style='vertical-align:middle;padding:0'><table style='width:100%;border:none'><tr>");
     DL.forEach(dia=>parts.push("<td class='az' style='text-align:center;padding:3px;width:20%;border:none'><strong style='font-size:9px'>"+dia+"<" + "/strong><" + "/td>"));
     parts.push("<" + "/tr><tr>");
     DS.forEach(dt=>parts.push("<td style='text-align:center;padding:2px;font-size:7.5px;color:#6b7280;background:#f8f9fc;border:none'>"+dt+"<" + "/td>"));
-    parts.push("<" + "/tr><" + "/table><" + "/td><td rowspan='2' style='width:8%;padding:3px;text-align:center;vertical-align:middle;font-size:7.5px;color:#6b7280'>Assinatura<" + "/td><" + "/tr><tr><td colspan='5' style='padding:0'><table style='width:100%;border:none'><tr>");
+    parts.push("<" + "/tr><" + "/table><" + "/td><" + "/tr>");
+
+    // Segunda linha: temas
+    parts.push("<tr><td colspan='5' style='padding:0'><table style='width:100%;border:none'><tr>");
     temas.forEach(t=>parts.push("<td style='text-align:center;padding:3px 2px;width:20%;border:none'><span style='font-size:7.5px;font-weight:600;color:#1e40af'>"+((t.titulo||"").slice(0,30))+"<" + "/span><" + "/td>"));
     parts.push("<" + "/tr><" + "/table><" + "/td><" + "/tr><" + "/table>");
-    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'><tr class='cz'><td style='text-align:center;padding:5px 8px;font-size:7.5px;font-weight:700;color:#1e40af;letter-spacing:.2px'>"+decl+"<" + "/td><" + "/tr><" + "/table>");
-    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'><thead><tr class='az'>");
-    parts.push("<th style='width:4%;text-align:center;padding:4px 2px;font-size:8px'>#<" + "/th><th style='width:20%;padding:4px;font-size:8px'>NOME:<" + "/th><th style='width:10%;padding:4px;font-size:8px'>CARGO<" + "/th>");
-    DL.forEach((dia,i)=>{ parts.push("<th style='width:11%;text-align:center;padding:3px 2px'><div style='font-size:9px;font-weight:700;color:#fff'>"+dia+"<" + "/div><div style='font-size:8px;color:rgba(255,255,255,.75)'>"+DS[i]+"<" + "/div><div style='font-size:7.5px;color:#dbeafe;margin-top:2px'>"+((temas[i]&&temas[i].titulo||"").slice(0,25))+"<" + "/div><" + "/th>"); });
-    parts.push("<th style='width:8%;text-align:center;padding:4px 2px;font-size:8px'>Assinatura<" + "/th><" + "/tr><" + "/thead><tbody>");
-    partic.forEach((p,idx2)=>{ const bg=idx2%2===0?"#fff":"#f8f9fc"; parts.push("<tr style='background:"+bg+"'><td style='text-align:center;font-size:8px;padding:2px'>"+(idx2+1)+"<" + "/td><td style='font-size:8px;padding:2px 4px'><div style='font-weight:600'>"+(p.nome||"—").slice(0,28)+"<" + "/div><" + "/td><td style='font-size:7.5px;padding:2px 4px;color:#6b7280'>"+(p.funcao||"—").slice(0,16)+"<" + "/td>"); DL.forEach((_,di)=>{ const dd=DS[di].split("/"),iso=dd[2]+"-"+dd[1]+"-"+dd[0],pres=(p.diasPresente||[]).includes(iso),foto=(p.fotosPonto||{})[iso]||""; if(foto&&pres) parts.push("<td style='text-align:center;padding:1px'><img src='"+foto+"' style='width:28px;height:28px;object-fit:cover;border-radius:3px'><" + "/td>"); else if(pres) parts.push("<td style='text-align:center'><span style='color:#10b981;font-size:14px'>✓<" + "/span><" + "/td>"); else parts.push("<td style='text-align:center'><span style='color:#d1d5db;font-size:10px'>—<" + "/span><" + "/td>"); }); const ud=(p.diasPresente||[]).slice().sort().slice(-1)[0]||"",fa=(p.fotosPonto||{})[ud]||p.fotoUrl||""; parts.push(fa?"<td style='text-align:center;padding:1px'><img src='"+fa+"' style='width:28px;height:28px;object-fit:cover;border-radius:3px'><" + "/td>":"<td><" + "/td>"); parts.push("<" + "/tr>"); });
-    for(let i=partic.length;i<10;i++){ const bg=i%2===0?"#fff":"#f8f9fc"; parts.push("<tr style='background:"+bg+";height:22px'><td style='text-align:center;font-size:8px;padding:2px;color:#d1d5db'>"+(i+1)+"<" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><" + "/tr>"); }
+
+    // ── DECLARAÇÃO ──
+    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'>");
+    parts.push("<tr class='cz'><td style='text-align:center;padding:5px 8px;font-size:7.5px;font-weight:700;color:#1e40af;letter-spacing:.2px'>"+decl+"<" + "/td><" + "/tr><" + "/table>");
+
+    // ── TABELA PARTICIPANTES ──
+    // Colunas: # | NOME | CARGO | SEG (foto) | TER (foto) | QUA (foto) | QUI (foto) | SEX (foto) | ASSINATURA (última foto grande)
+    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'>");
+    parts.push("<thead><tr class='az'>");
+    parts.push("<th style='width:3%;text-align:center;padding:4px 2px;font-size:8px'>#<" + "/th>");
+    parts.push("<th style='width:18%;padding:4px;font-size:8px'>NOME:<" + "/th>");
+    parts.push("<th style='width:9%;padding:4px;font-size:8px'>CARGO<" + "/th>");
+    DL.forEach((dia,i)=>{
+      parts.push("<th style='width:11%;text-align:center;padding:3px 2px'>");
+      parts.push("<div style='font-size:8px;font-weight:700;color:#fff'>"+dia+"<" + "/div>");
+      parts.push("<div style='font-size:7px;color:rgba(255,255,255,.75)'>"+DS[i]+"<" + "/div>");
+      parts.push("<div style='font-size:6.5px;color:#dbeafe;margin-top:1px'>"+((temas[i]&&temas[i].titulo||"").slice(0,20))+"<" + "/div>");
+      parts.push("<" + "/th>");
+    });
+    // Coluna assinatura: última foto grande
+    parts.push("<th style='width:10%;text-align:center;padding:3px 2px;font-size:7.5px;color:#fff'>Assinatura<br><span style='font-size:6px;opacity:.7'>(última foto)</span><" + "/th>");
+    parts.push("<" + "/tr><" + "/thead><tbody>");
+
+    // Linhas dos participantes
+    partic.forEach((p,ri)=>{
+      const bg=ri%2===0?"#fff":"#f8f9fc";
+      parts.push("<tr style='background:"+bg+";height:44px'>");
+      parts.push("<td style='text-align:center;font-size:8px;padding:2px'>"+(ri+1)+"<" + "/td>");
+      parts.push("<td style='font-size:8px;padding:2px 4px;font-weight:600'>"+(p.nome||"—").slice(0,26)+"<" + "/td>");
+      parts.push("<td style='font-size:7.5px;padding:2px 4px;color:#6b7280'>"+(p.funcao||"—").slice(0,14)+"<" + "/td>");
+
+      // Foto por dia
+      DL.forEach((_,di)=>{
+        const iso=brToIso(DS[di]);
+        const pres=(p.diasPresente||[]).includes(iso);
+        const foto=(p.fotosPonto||{})[iso]||"";
+        if(foto && foto.startsWith("http") && pres){
+          parts.push("<td style='text-align:center;padding:2px'>");
+          parts.push("<img src='"+foto+"' class='assin' alt='"+( p.nome||"")+"'>");
+          parts.push("<" + "/td>");
+        } else if(pres){
+          // Presente mas sem foto — mostrar ✓
+          parts.push("<td style='text-align:center;color:#10b981;font-size:14px;padding:2px'>✓<" + "/td>");
+        } else {
+          parts.push("<td style='text-align:center;color:#d1d5db;font-size:10px;padding:2px'>—<" + "/td>");
+        }
+      });
+
+      // Assinatura: última foto disponível (maior)
+      const fAssin = getAssinatura(p);
+      if(fAssin && fAssin.startsWith("http")){
+        parts.push("<td style='text-align:center;padding:3px'>");
+        parts.push("<img src='"+fAssin+"' class='assin-lg' alt='Assinatura "+( p.nome||"")+"'>");
+        parts.push("<" + "/td>");
+      } else {
+        parts.push("<td style='text-align:center;color:#d1d5db;font-size:7px;padding:2px'>Sem foto<" + "/td>");
+      }
+      parts.push("<" + "/tr>");
+    });
+
+    // Linhas em branco (mínimo 10)
+    for(let i=partic.length;i<10;i++){
+      const bg=i%2===0?"#fff":"#f8f9fc";
+      parts.push("<tr style='background:"+bg+";height:44px'>");
+      parts.push("<td style='text-align:center;font-size:8px;padding:2px;color:#d1d5db'>"+(i+1)+"<" + "/td>");
+      parts.push("<td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td><td><" + "/td>");
+      parts.push("<" + "/tr>");
+    }
     parts.push("<" + "/tbody><" + "/table>");
-    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'><tr class='cz'><td style='width:50%;padding:5px 8px'><div style='font-size:8px;font-weight:700'>ASSINATURA DO RESPONSÁVEL: ___________________________<" + "/div><div style='font-size:7.5px;color:#6b7280;margin-top:2px'>"+((d.condutor&&d.condutor.nome)||"—")+" · CARGO: "+((d.condutor&&d.condutor.cargo)||"—")+"<" + "/div><" + "/td><td style='width:50%;text-align:right;padding:5px 8px;font-size:7px;color:#9ca3af'>GO — Gestão de Obras · DDS · "+semLbl+"<br>Gerado em "+new Date().toLocaleDateString("pt-BR")+"<" + "/td><" + "/tr><" + "/table>");
+
+    // ── RODAPÉ (assinatura do responsável) ──
+    // Foto do responsável = última foto da semana dele (como participante) ou foto do perfil
+    const respPartic = partic.find(p=>p.nome===d.condutor?.nome);
+    const respFoto   = respPartic ? getAssinatura(respPartic) : "";
+    parts.push("<table style='border:1.5px solid #0f3460;margin-top:-1px;border-top:none'><tr class='cz'>");
+    parts.push("<td style='width:50%;padding:6px 10px;vertical-align:middle'>");
+    parts.push("<div style='display:flex;align-items:center;gap:10px'>");
+    if(respFoto && respFoto.startsWith("http")){
+      parts.push("<img src='"+respFoto+"' style='width:48px;height:48px;object-fit:cover;border-radius:6px;border:1.5px solid #0f3460'>");
+    }
+    parts.push("<div>");
+    parts.push("<div style='font-size:8px;font-weight:700'>ASSINATURA DO RESPONSÁVEL: ___________________________<" + "/div>");
+    parts.push("<div style='font-size:7.5px;color:#6b7280;margin-top:2px'>"+((d.condutor&&d.condutor.nome)||"—")+" · CARGO: "+((d.condutor&&d.condutor.cargo)||"—")+"<" + "/div>");
+    parts.push("<" + "/div><" + "/div><" + "/td>");
+    parts.push("<td style='width:50%;text-align:right;padding:6px 10px;font-size:7px;color:#9ca3af;vertical-align:middle'>");
+    parts.push("GO — Gestão de Obras · DDS · "+semLbl+"<br>Gerado em "+new Date().toLocaleDateString("pt-BR"));
+    parts.push("<" + "/td><" + "/tr><" + "/table>");
     parts.push("<" + "/body><" + "/html>");
     return parts.join("\n");
   }
