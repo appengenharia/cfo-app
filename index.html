@@ -1612,6 +1612,21 @@
                 Informe a atividade e clique em <strong>Gerar temas</strong>
               </div>
             </div>
+
+            <!-- Justificativas por dia (feriados, paralisações) -->
+            <div style="margin-top:14px;border-top:1.5px solid var(--border);padding-top:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:.85rem;font-weight:600;color:var(--text)">📅 Justificativas por dia</div>
+                <div style="font-size:.74rem;color:var(--muted)">Feriados, paralisações ou ausências</div>
+              </div>
+              <div id="ddsJustDias" style="display:flex;flex-direction:column;gap:8px">
+                <!-- Preenchido dinamicamente ao carregar semana -->
+                <div style="text-align:center;color:var(--muted);font-size:.8rem;padding:10px">
+                  Selecione a semana para gerenciar justificativas
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -4203,7 +4218,7 @@ async function _eSnapshotHist(id,g){
         limit(200)
       ));
       _eGaleriaRegistros=[];
-      snap.forEach(d=>{ const r={id:d.id,...d.data()}; if(r.fotoUrl) _eGaleriaRegistros.push(r); });
+      snap.forEach(d=>{ const r={id:d.id,...d.data()}; if(r.fotoUrl||r.fotoUrlDepois) _eGaleriaRegistros.push(r); });
       evolFiltrarGaleria();
     }catch(e){
       $("evolGaleriaConteudo").innerHTML=`<div class="empty"><p>Erro ao carregar fotos.</p></div>`;
@@ -4250,9 +4265,9 @@ async function _eSnapshotHist(id,g){
         return `
         <div style="background:#f8f9fc;border:1.5px solid ${tipo==="depois"?"#bbf7d0":"#fde68a"};border-radius:10px;overflow:hidden;margin-bottom:8px">
           <div style="display:flex;gap:12px;cursor:pointer"
-               onclick="App.evolVerFotoAmp('${r.fotoUrl}','${(r.unidNome||"").replace(/'/g,"&#39;")}','${(r.svcDesc||"").replace(/'/g,"&#39;")}','${data}','${delta.toFixed(1)}')">
+               onclick="App.evolVerFotoAmp('${r.fotoUrl||r.fotoUrlDepois||""}','${(r.unidNome||"").replace(/'/g,"&#39;")}','${(r.svcDesc||"").replace(/'/g,"&#39;")}','${data}','${delta.toFixed(1)}')">
             <div style="position:relative;flex-shrink:0">
-              <img src="${r.fotoUrl}" style="width:90px;height:80px;object-fit:cover;display:block" alt="" loading="lazy">
+              <img src="${r.fotoUrl||r.fotoUrlDepois||''}" style="width:90px;height:80px;object-fit:cover;display:block" alt="" loading="lazy">
               <span style="position:absolute;top:4px;left:4px;background:${tipoCor};color:#fff;font-size:.58rem;font-weight:700;padding:1px 5px;border-radius:10px">${tipoLabel}</span>
             </div>
             <div style="padding:9px 10px;min-width:0;flex:1">
@@ -10712,7 +10727,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         orderBy("criadoEm","desc"), limit(200)
       ));
       _vGaleriaRegistros = [];
-      snap.forEach(d=>{ const r={id:d.id,...d.data()}; if(r.fotoUrl) _vGaleriaRegistros.push(r); });
+      snap.forEach(d=>{ const r={id:d.id,...d.data()}; if(r.fotoUrl||r.fotoUrlDepois) _vGaleriaRegistros.push(r); });
 
       // Popular filtro de unidades
       const sel=$("vGaleriaFiltroUnid"); if(sel){
@@ -10780,7 +10795,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       return `
       <div style="border-radius:10px;overflow:hidden;background:rgba(255,255,255,.06);border:1.5px solid ${tipo==="depois"?"rgba(16,185,129,.3)":"rgba(245,166,35,.3)"}">
         <div style="position:relative;cursor:zoom-in" onclick="App.vVerFotoAmp('${r.fotoUrl}','${(r.unidNome||"").replace(/'/g,"&#39;")}','${(r.svcDesc||"").replace(/'/g,"&#39;")}','${r.data||""}','${delta.toFixed(1)}','${tipo}')">
-          <img src="${r.fotoUrl}" style="width:100%;height:120px;object-fit:cover;display:block" loading="lazy" alt="">
+          <img src="${r.fotoUrl||r.fotoUrlDepois||''}" style="width:100%;height:120px;object-fit:cover;display:block" loading="lazy" alt="">
           <span style="position:absolute;top:5px;left:5px;background:${tipoCor};color:#fff;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:16px">${tipoLabel}</span>
         </div>
         <div style="padding:6px 8px">
@@ -10959,7 +10974,9 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         // Novo DDS — reset
         _ddsTemas  = [];
         _ddsPartic = [];
+        _ddsJust   = {};
         _ddsStatus = "rascunho";
+        _ddsRenderJustificativas();
         if($("ddsCondutorNome"))  $("ddsCondutorNome").value  = currentProfile?.nome || "";
         if($("ddsCondutorCargo")) $("ddsCondutorCargo").value = "";
         if($("ddsAtividade"))     $("ddsAtividade").value     = "";
@@ -10968,8 +10985,10 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       }
     }catch(e){ console.error(e); }
 
+    _ddsJust = (d?.justificativas || {});
     _ddsRenderTemas();
     _ddsRenderParticipantes();
+    _ddsRenderJustificativas();
     _ddsRenderStatus();
     // Auto-sincronizar participantes do ponto se lista vazia
     if(_ddsPartic.length === 0 && _ddsObraId && _ddsSemana){
@@ -11171,7 +11190,9 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         if(!mapa[p.uid].diasPresente.includes(p.data))
           mapa[p.uid].diasPresente.push(p.data);
         // Foto de entrada como presença — usar a melhor disponível
-        const melhorFoto = p.fotoEntrada || p.fotoRetorno || p.fotoAlmoco || p.fotoSaida || "";
+        // Exclui placeholder offline "[foto_offline]"
+        const melhorFoto = [p.fotoEntrada, p.fotoRetorno, p.fotoAlmoco, p.fotoSaida]
+          .find(f => f && f.startsWith("http")) || "";
         if(melhorFoto && !mapa[p.uid].fotosPonto[p.data])
           mapa[p.uid].fotosPonto[p.data] = melhorFoto;
       });
@@ -11185,6 +11206,11 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
             const u = uSnap.data();
             mapa[uid].fotoUrl  = u.fotoUrl  || "";
             mapa[uid].funcao   = u.funcaoOutro || u.funcao || "";
+            // Fallback: para dias sem foto do ponto, usar foto do perfil
+            mapa[uid].diasPresente.forEach(data=>{
+              if(!mapa[uid].fotosPonto[data] && u.fotoUrl)
+                mapa[uid].fotosPonto[data] = u.fotoUrl;
+            });
           }
         }catch(_){}
       }
@@ -11237,6 +11263,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
         obs:          ($("ddsObs")?.value       || "").trim(),
         temas,
         participantes:_ddsPartic,
+        justificativas: _ddsJust,
         status:       _ddsStatus,
         atualizadoEm: serverTimestamp(),
         atualizadoPor:currentUser?.uid || null,
@@ -11734,6 +11761,51 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   }
 
 
+
+  // ── Justificativas por dia (feriados / paralisações) ─────
+  let _ddsJust = {}; // { "2026-03-25": { tipo: "feriado", obs: "..." }, ... }
+
+  const _DDS_TIPOS_JUST = [
+    { value: "",           label: "— Dia normal —" },
+    { value: "feriado",    label: "🎉 Feriado" },
+    { value: "paralisacao",label: "⛔ Paralisação" },
+    { value: "chuva",      label: "🌧️ Chuva / Clima" },
+    { value: "outro",      label: "📝 Outro" },
+  ];
+
+  function _ddsRenderJustificativas(){
+    const el = $("ddsJustDias"); if(!el) return;
+    if(!_ddsSemana){ el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:10px">Selecione a semana</div>'; return; }
+
+    const [ano, semN] = _ddsSemana.split("-W").map(Number);
+    const jan4 = new Date(ano, 0, 4);
+    const seg  = new Date(jan4); seg.setDate(jan4.getDate()-(jan4.getDay()||7)+1+(semN-1)*7);
+    const DS=[], DL=["Segunda","Terça","Quarta","Quinta","Sexta"];
+    for(let i=0;i<5;i++){ const x=new Date(seg); x.setDate(seg.getDate()+i); DS.push(x.toISOString().split("T")[0]); }
+
+    el.innerHTML = DS.map((data, i)=>{
+      const j = _ddsJust[data] || { tipo:"", obs:"" };
+      const opts = _DDS_TIPOS_JUST.map(t=>`<option value="${t.value}" ${j.tipo===t.value?"selected":""}>${t.label}</option>`).join("");
+      const temJust = j.tipo && j.tipo !== "";
+      return `<div style="background:${temJust?"#fff7ed":"#f8fafc"};border:1.5px solid ${temJust?"#fed7aa":"var(--border)"};border-radius:10px;padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="min-width:90px;font-size:.8rem;font-weight:600;color:${temJust?"#92400e":"var(--text)"}">${DL[i]}<br><span style="font-size:.72rem;font-weight:400;color:var(--muted)">${data.split("-").reverse().join("/")}</span></div>
+          <select onchange="App._ddsSetJust('${data}','tipo',this.value)" style="margin:0;font-size:.8rem;flex:1;min-width:140px">${opts}</select>
+          <input type="text" placeholder="Observação (opcional)" value="${j.obs||""}"
+            onchange="App._ddsSetJust('${data}','obs',this.value)"
+            style="margin:0;font-size:.8rem;flex:2;min-width:180px;${!temJust?"opacity:.5":""}">
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function _ddsSetJust(data, campo, valor){
+    if(!_ddsJust[data]) _ddsJust[data] = { tipo:"", obs:"" };
+    _ddsJust[data][campo] = valor;
+    // Re-renderizar para atualizar cores
+    _ddsRenderJustificativas();
+  }
+
   // ── Preview DDS ──────────────────────────────────────────
   async function ddsAbrirPreview(){
     if(!_ddsObraId||!_ddsSemana){ toast("Salve o DDS primeiro.", false); return; }
@@ -11936,6 +12008,7 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     ddsGerarTemas, ddsAtualizarCondutor, ddsSincronizarParticipantes,
     ddsAbrirPreview, _ddsImprimirPreview,
     _ddsToggleAcc, _ddsEditarDeclaracao, _ddsSalvarDeclaracao, _ddsCancelarDeclaracao,
+    _ddsSetJust, _ddsRenderJustificativas,
     _ddsBuscarColab, _ddsSelectColab, _ddsAddManual,
     ddsAddEmail, ddsSetEnvioAuto, ddsSalvarEmailConfig, ddsEnviarEmailAgora,
     _ddsToggleAcc,
