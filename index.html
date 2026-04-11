@@ -13,6 +13,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>GO – Gestão de Obras</title>
+  <meta name="theme-color" content="#0f3460">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="GO">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -303,6 +310,34 @@
   .dds-status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600}
   .dds-status-badge.rascunho{background:#fff8e1;color:#92640a}
   .dds-status-badge.finalizado{background:#ecfdf5;color:#065f46}
+
+
+/* ── Financeiro / Reembolso ── */
+.fin-grid-kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:1100px){.fin-grid-kpi{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.fin-grid-kpi{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.fin-grid-kpi{grid-template-columns:1fr}}
+.fin-colab-card,.reemb-user-card{background:#f8f9fc;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.fin-colab-top,.reemb-user-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.fin-colab-nome,.reemb-user-nome{font-weight:700;font-size:.95rem;color:var(--text)}
+.fin-colab-sub,.reemb-user-sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.fin-mini-grid,.reemb-user-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+@media(max-width:800px){.fin-mini-grid,.reemb-user-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.fin-mini-grid,.reemb-user-grid{grid-template-columns:1fr}}
+.fin-mini-box,.reemb-user-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.fin-mini-box .lbl,.reemb-user-box .lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase}
+.fin-mini-box .val,.reemb-user-box .val{font-weight:700;margin-top:4px}
+.fin-regra-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#1e40af;margin-top:10px}
+.fin-actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.install-banner{position:fixed;left:12px;right:12px;bottom:72px;z-index:500;background:linear-gradient(135deg,#0f3460,#1a4a8a);color:#fff;border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.28);padding:14px 16px;display:flex;gap:12px;align-items:center}
+.install-banner .ib-icon{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+.install-banner .ib-body{flex:1;min-width:0}
+.install-banner .ib-title{font-weight:800;font-family:'Syne',sans-serif;font-size:.95rem}
+.install-banner .ib-sub{font-size:.76rem;opacity:.85;margin-top:3px;line-height:1.45}
+.install-banner .ib-actions{display:flex;gap:8px;flex-wrap:wrap}
+.install-banner .ib-actions .btn{padding:8px 12px;border-radius:10px}
+@media(min-width:768px){.install-banner{left:auto;right:24px;max-width:430px;bottom:24px}}
+
 </style>
 </head>
 <body>
@@ -328,6 +363,29 @@
 </div>
 <div class="sync-banner hidden" id="syncBanner">
   🔄 Sincronizando lançamentos pendentes...
+</div>
+
+<div class="install-banner hidden" id="installAppBanner">
+  <div class="ib-icon">📱</div>
+  <div class="ib-body">
+    <div class="ib-title">Instalar GO no celular</div>
+    <div class="ib-sub" id="installAppText">Use o GO como aplicativo no Android ou iPhone.</div>
+  </div>
+  <div class="ib-actions">
+    <button class="btn btn-outline sm" id="installAppActionBtn" type="button">Instalar</button>
+    <button class="btn btn-ghost sm" id="installAppDismissBtn" type="button">Fechar</button>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="installIosModal">
+  <div class="modal" style="max-width:460px">
+    <h3>Instalar no iPhone / iPad</h3>
+    <p style="font-size:.9rem;color:var(--muted);line-height:1.7">No Safari, toque no botão <strong>Compartilhar</strong> e depois escolha <strong>Adicionar à Tela de Início</strong>. O GO ficará com aparência de aplicativo.</p>
+    <div class="info-box" style="margin-top:14px">📲 Caminho sugerido: Compartilhar → Adicionar à Tela de Início</div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" type="button" onclick="App.pwaCloseIosHelp()">Entendi</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
@@ -567,6 +625,7 @@
     <button class="nav-item active" onclick="App.goTab('dashboard')" data-tab="dashboard"><span class="nav-icon">📊</span> Dashboard</button>
     <button class="nav-item hidden" id="sideLancamentos" onclick="App.goTab('lancamentos')" data-tab="lancamentos"><span class="nav-icon">➕</span> Lançamentos</button>
     <button class="nav-item hidden" id="sideRelatorios" onclick="App.goTab('relatorios')" data-tab="relatorios"><span class="nav-icon">📋</span> Relatórios</button>
+    <button class="nav-item hidden" id="sideFinanceiro" onclick="App.goTab('financeiro')" data-tab="financeiro"><span class="nav-icon">💰</span> Financeiro</button>
     <div class="nav-divider"></div>
     <button class="nav-item hidden" id="sidePonto" onclick="App.goTab('ponto')" data-tab="ponto"><span class="nav-icon">🕐</span> Cartão de Ponto</button>
     <button class="nav-item hidden" id="sideRH" onclick="App.goTab('rh')" data-tab="rh"><span class="nav-icon">👔</span> RH</button>
@@ -634,6 +693,11 @@
     <div class="tab-panel" id="tab-lancamentos">
       <div class="page-header"><h1>Registrar Despesa</h1><p>Adicione um novo gasto à obra selecionada.</p></div>
 
+      <div class="card hidden" id="lancReembolsoResumoWrap">
+        <div class="card-header"><div><h3>Reembolso do mês</h3><p>Resumo por obra com pagamentos e saldo pendente.</p></div></div>
+        <div id="lancReembolsoResumoList"><div class="empty"><div class="empty-icon">💳</div><p>Nenhum reembolso pendente neste mês.</p></div></div>
+      </div>
+
       <div class="card" id="formLancCard">
         <div class="card-header"><div><h3 id="formLancTitle">Nova Despesa</h3><p>Preencha os dados do gasto.</p></div></div>
         <div class="row">
@@ -695,6 +759,75 @@
         </div>
         <div id="lancList"><div class="empty"><div class="empty-icon">📋</div><p>Nenhuma despesa registrada ainda.</p></div></div>
       </div>
+    </div>
+
+
+    <!-- ── FINANCEIRO ── -->
+    <div class="tab-panel" id="tab-financeiro">
+      <div class="page-header"><h1>Financeiro</h1><p>Controle financeiro por obra com reembolso manual de colaboradores.</p></div>
+
+      <div class="card">
+        <div class="card-header"><div><h3>Configuração da obra</h3><p>Cadastre o valor da obra e a regra manual do reembolso.</p></div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+          <div style="flex:1;min-width:220px">
+            <label style="margin-top:0">Obra</label>
+            <select id="finObra" onchange="App.finCarregarTudo()">
+              <option value="">— Selecione a obra —</option>
+            </select>
+          </div>
+          <div style="width:180px">
+            <label style="margin-top:0">Competência</label>
+            <input type="month" id="finCompetencia" onchange="App.finCarregarTudo()">
+          </div>
+          <div style="width:220px">
+            <label style="margin-top:0">Valor da obra (R$)</label>
+            <input type="number" id="finValorObra" min="0" step="0.01" placeholder="0,00">
+          </div>
+        </div>
+        <label>Regra manual do reembolso</label>
+        <textarea id="finRegraTexto" rows="3" placeholder="Ex.: Reembolso desta obra ocorre após conferência interna e liberação administrativa."></textarea>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+          <div style="width:220px">
+            <label style="margin-top:0">Lembrete ativo</label>
+            <select id="finLembreteAtivo">
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+          <div style="width:220px">
+            <label style="margin-top:0">Intervalo do lembrete (horas)</label>
+            <input type="number" id="finIntervaloHoras" min="1" step="1" value="3">
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="App.finSalvarConfigObra()">💾 Salvar configuração</button>
+          </div>
+        </div>
+        <div class="msg" id="finConfigMsg"></div>
+      </div>
+
+      <div class="fin-grid-kpi">
+        <div class="stat-card"><div class="stat-label">Valor da obra</div><div class="stat-value" id="finStatValorObra">R$ 0,00</div></div>
+        <div class="stat-card c-accent"><div class="stat-label">Despesa lançada</div><div class="stat-value" id="finStatDespesa">R$ 0,00</div></div>
+        <div class="stat-card c-warning"><div class="stat-label">Reemb. lançado</div><div class="stat-value" id="finStatLancado">R$ 0,00</div></div>
+        <div class="stat-card"><div class="stat-label">Reembolsado</div><div class="stat-value" id="finStatReembolsado">R$ 0,00</div></div>
+        <div class="stat-card c-success"><div class="stat-label">Saldo reembolso</div><div class="stat-value" id="finStatSaldo">R$ 0,00</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div><h3>Resumo por colaborador</h3><p>Pagamento manual parcial ou total por obra e competência.</p></div></div>
+        <div id="finResumoColabs"><div class="empty"><div class="empty-icon">💼</div><p>Selecione uma obra para começar.</p></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div><h3>Gráfico</h3><p>Comparativo entre lançado, reembolsado e saldo.</p></div></div>
+        <canvas id="finChartResumo" height="110"></canvas>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div><h3>Histórico de reembolsos</h3><p>Pagamentos lançados manualmente pelo administrador.</p></div></div>
+        <div id="finHistorico"><div class="empty"><div class="empty-icon">🧾</div><p>Nenhum reembolso registrado ainda.</p></div></div>
+      </div>
+      <div id="finModalHost"></div>
     </div>
 
     <!-- ── RELATÓRIOS ── -->
@@ -2040,6 +2173,7 @@
     <button class="nav-item active" onclick="App.goTab('dashboard')" data-tab="dashboard"><span class="nav-icon">📊</span><span>Dashboard</span></button>
     <button class="nav-item hidden" id="bottomLancamentos" onclick="App.goTab('lancamentos')" data-tab="lancamentos"><span class="nav-icon">➕</span><span>Lançar</span></button>
     <button class="nav-item hidden" id="bottomRelatorios" onclick="App.goTab('relatorios')" data-tab="relatorios"><span class="nav-icon">📋</span><span>Relatórios</span></button>
+    <button class="nav-item hidden" id="bottomFinanceiro" onclick="App.goTab('financeiro')" data-tab="financeiro"><span class="nav-icon">💰</span><span>Financeiro</span></button>
     <button class="nav-item hidden" id="bottomPonto" onclick="App.goTab('ponto')" data-tab="ponto"><span class="nav-icon">🕐</span><span>Ponto</span></button>
     <button class="nav-item hidden" id="bottomRH" onclick="App.goTab('rh')" data-tab="rh"><span class="nav-icon">👔</span><span>RH</span></button>
     <button class="nav-item hidden" id="bottomAdmin" onclick="App.goTab('admin')" data-tab="admin"><span class="nav-icon">⚙️</span><span>Admin</span></button>
@@ -2323,6 +2457,7 @@
     if(tab==="dds"      && currentRole!=="ADMIN" && !canFazerDDS(currentProfile) && !canEvoluirObra(currentProfile)) return;
     if(tab==="lancamentos" && currentRole!=="ADMIN" && !canFazerLancamentos()) return;
     if(tab==="relatorios"  && currentRole!=="ADMIN" && !canAcessarRelatorios()) return;
+    if(tab==="financeiro"  && currentRole!=="ADMIN") return;
     document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
     document.querySelectorAll(".nav-item[data-tab]").forEach(b=>b.classList.remove("active"));
     $(`tab-${tab}`)?.classList.add("active");
@@ -2566,7 +2701,7 @@
 
   async function initApp(user) {
     currentUser=user;
-    ["sideAdmin","bottomAdmin","sidePonto","bottomPonto","sideRH","bottomRH","sideEvolucao","bottomEvolucao","sideDDS","bottomDDS","sideLancamentos","bottomLancamentos","sideRelatorios","bottomRelatorios"].forEach(id=>$(id)?.classList.add("hidden"));
+    ["sideAdmin","bottomAdmin","sidePonto","bottomPonto","sideRH","bottomRH","sideEvolucao","bottomEvolucao","sideDDS","bottomDDS","sideLancamentos","bottomLancamentos","sideRelatorios","bottomRelatorios","sideFinanceiro","bottomFinanceiro"].forEach(id=>$(id)?.classList.add("hidden"));
     const profile=await loadProfile(user.uid);
     const nome=profile?.nome||user.email.split("@")[0];
     currentRole=profile?.role||"USER";
@@ -2618,7 +2753,7 @@
     }
 
     if(currentRole==="ADMIN"){
-      ["sideAdmin","bottomAdmin","sidePonto","bottomPonto","sideRH","bottomRH","sideEvolucao","bottomEvolucao","sideLancamentos","bottomLancamentos","sideRelatorios","bottomRelatorios"].forEach(id=>$(id)?.classList.remove("hidden"));
+      ["sideAdmin","bottomAdmin","sidePonto","bottomPonto","sideRH","bottomRH","sideEvolucao","bottomEvolucao","sideLancamentos","bottomLancamentos","sideRelatorios","bottomRelatorios","sideFinanceiro","bottomFinanceiro"].forEach(id=>$(id)?.classList.remove("hidden"));
     }
     if(currentRole==="USER"){
       if(canFazerLancamentos(profile)){ $("sideLancamentos")?.classList.remove("hidden"); $("bottomLancamentos")?.classList.remove("hidden"); }
@@ -2656,6 +2791,9 @@
     loadDashboard();
     goTab("dashboard");
     updatePendingCount();
+    finConfigurarPWA();
+    finCarregarResumoColaborador();
+    finIniciarLembretesReembolso();
     setTimeout(syncPendingLancs, 2000);
     setTimeout(verificarFechamentoMensal, 3000);
     setTimeout(verificarFechamentoPonto, 5000);  // Fechamento mensal de ponto
@@ -5542,6 +5680,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       setMsg("lancMsg","✅ Despesa salva com sucesso!",true);
       await loadLancs();
       await updateStatTotal();
+      await finCarregarResumoColaborador();
+      if(currentRole==="ADMIN" && $("tab-financeiro")?.classList.contains("active")) await finCarregarTudo();
     } catch(e) { setMsg("lancMsg","Erro: "+e.message); }
     finally { btn.disabled=false; btn.textContent="💾 Salvar Despesa"; }
   }
@@ -5588,6 +5728,8 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
         toast("Despesa excluída.");
         await loadLancs();
         await updateStatTotal();
+        await finCarregarResumoColaborador();
+        if(currentRole==="ADMIN" && $("tab-financeiro")?.classList.contains("active")) await finCarregarTudo();
       } catch(e){ toast("Erro: "+e.message,false); }
     });
   }
@@ -12203,6 +12345,490 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     toast("✅ "+nome+" adicionado à equipe.");
   }
 
+
+
+  // ─────────────────────────────────────────
+  // FINANCEIRO / REEMBOLSOS MANUAIS
+  // ─────────────────────────────────────────
+  let _finChartResumo = null;
+  let _finReminderTimer = null;
+  let _finDeferredPrompt = null;
+  let _finPwaInitDone = false;
+  let _finResumoMap = {};
+
+  const finBrl = n => Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const finCompetenciaAtual = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+  };
+  const finCompetenciaDeData = (dataStr="") => String(dataStr||"").slice(0,7);
+  const finFmtData = (dataStr="") => dataStr ? new Date(`${dataStr}T12:00:00`).toLocaleDateString("pt-BR") : "—";
+  const finSanitize = v => String(v==null?"":v).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  function finIsMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+  function finIsIOS(){ return /iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+  function finStandalone(){ return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+
+  async function finCarregarObrasSelect() {
+    const sel = $("finObra");
+    if(!sel) return;
+    try {
+      const snap = await getDocs(collection(db,"obras"));
+      const obras = snap.docs
+        .map(d=>({id:d.id, ...d.data()}))
+        .filter(o=>o.ativa!==false)
+        .sort((a,b)=>(a.nome||"").localeCompare(b.nome||"", 'pt-BR'));
+      const atual = sel.value || "";
+      sel.innerHTML = '<option value="">— Selecione a obra —</option>';
+      obras.forEach(o=>{
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.nome || o.id;
+        if(atual && atual===o.id) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if(!sel.value && obras[0]) sel.value = obras[0].id;
+    } catch(e){ console.error('finCarregarObrasSelect', e); }
+  }
+
+  async function finInicializarTab(){
+    if(currentRole !== 'ADMIN') return;
+    if($("finCompetencia") && !$("finCompetencia").value) $("finCompetencia").value = finCompetenciaAtual();
+    await finCarregarObrasSelect();
+    await finCarregarTudo();
+  }
+
+  async function finCarregarConfigObra(obraId){
+    if(!obraId) return null;
+    try {
+      const snap = await getDoc(doc(db,'financeiro_obras',obraId));
+      return snap.exists() ? snap.data() : null;
+    } catch(e){ console.error('finCarregarConfigObra', e); return null; }
+  }
+
+  async function finSalvarConfigObra(){
+    if(currentRole !== 'ADMIN') return;
+    const obraId = $("finObra")?.value || '';
+    if(!obraId){ setMsg('finConfigMsg','Selecione a obra.'); return; }
+    const valorObra = parseFloat($("finValorObra")?.value || '0') || 0;
+    const regra = ($("finRegraTexto")?.value || '').trim();
+    const lembrete = ($("finLembreteAtivo")?.value || 'sim') === 'sim';
+    const intervalo = Math.max(1, parseInt($("finIntervaloHoras")?.value || '3',10) || 3);
+    try {
+      let obraNome = obraId;
+      try {
+        const obraSnap = await getDoc(doc(db,'obras',obraId));
+        if(obraSnap.exists()) obraNome = obraSnap.data().nome || obraId;
+      } catch(_){}
+      await setDoc(doc(db,'financeiro_obras',obraId), {
+        obra_id: obraId,
+        obra_nome: obraNome,
+        valor_obra: valorObra,
+        regra_reembolso_texto: regra,
+        lembrete_reembolso_ativo: lembrete,
+        intervalo_lembrete_horas: intervalo,
+        atualizadoEm: serverTimestamp(),
+        atualizadoPor: currentUser?.uid || ''
+      }, {merge:true});
+      setMsg('finConfigMsg','✅ Configuração salva com sucesso.',true);
+      toast('Configuração do financeiro salva!');
+      await finCarregarTudo();
+      await finCarregarResumoColaborador();
+    } catch(e){
+      console.error(e);
+      setMsg('finConfigMsg','Erro ao salvar configuração: '+e.message);
+    }
+  }
+
+  async function finObterLancamentos(){
+    const snap = await getDocs(collection(db,'lancamentos'));
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }
+
+  async function finObterReembolsos(){
+    const snap = await getDocs(collection(db,'reembolsos'));
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }
+
+  function finAgruparColaborador(lancs=[], reembs=[]){
+    const mapa = {};
+    lancs.filter(l=>l.reembolsavel).forEach(l=>{
+      const uid = l.colaborador_uid || 'sem_uid';
+      if(!mapa[uid]) mapa[uid] = {
+        uid,
+        nome: l.colaborador_nome || 'Colaborador',
+        totalLancado: 0,
+        totalPago: 0,
+        saldo: 0,
+        ultimaDataPagamento: '',
+        itens: []
+      };
+      mapa[uid].totalLancado += Number(l.valor||0);
+      mapa[uid].itens.push(l);
+    });
+    reembs.forEach(r=>{
+      const uid = r.colaborador_uid || 'sem_uid';
+      if(!mapa[uid]) mapa[uid] = {
+        uid,
+        nome: r.colaborador_nome || 'Colaborador',
+        totalLancado: 0,
+        totalPago: 0,
+        saldo: 0,
+        ultimaDataPagamento: '',
+        itens: []
+      };
+      mapa[uid].totalPago += Number(r.valor_pago||0);
+      const dt = r.data_pagamento || '';
+      if(dt && (!mapa[uid].ultimaDataPagamento || dt > mapa[uid].ultimaDataPagamento)) mapa[uid].ultimaDataPagamento = dt;
+    });
+    return Object.values(mapa).map(item=>({
+      ...item,
+      saldo: Math.max(0, Number(item.totalLancado||0) - Number(item.totalPago||0))
+    })).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'', 'pt-BR'));
+  }
+
+  async function finCarregarTudo(){
+    if(currentRole !== 'ADMIN') return;
+    const obraId = $("finObra")?.value || '';
+    const competencia = $("finCompetencia")?.value || finCompetenciaAtual();
+    if($("finCompetencia") && !$("finCompetencia").value) $("finCompetencia").value = competencia;
+    if(!obraId){
+      $("finResumoColabs").innerHTML = '<div class="empty"><div class="empty-icon">💼</div><p>Selecione uma obra para começar.</p></div>';
+      $("finHistorico").innerHTML = '<div class="empty"><div class="empty-icon">🧾</div><p>Nenhum reembolso registrado ainda.</p></div>';
+      ["finStatValorObra","finStatDespesa","finStatLancado","finStatReembolsado","finStatSaldo"].forEach(id=>$(id)&&( $(id).textContent = finBrl(0) ));
+      finRenderChart(0,0,0,0,0);
+      return;
+    }
+    try {
+      const config = await finCarregarConfigObra(obraId);
+      $("finValorObra").value = String(config?.valor_obra || '');
+      $("finRegraTexto").value = config?.regra_reembolso_texto || '';
+      $("finLembreteAtivo").value = config?.lembrete_reembolso_ativo===false ? 'nao' : 'sim';
+      $("finIntervaloHoras").value = String(config?.intervalo_lembrete_horas || 3);
+
+      const [lancsAll, reembsAll] = await Promise.all([finObterLancamentos(), finObterReembolsos()]);
+      const lancsObra = lancsAll.filter(l=>l.obra_id===obraId && finCompetenciaDeData(l.data)===competencia);
+      const reembsObra = reembsAll.filter(r=>r.obra_id===obraId && (r.competencia||'')===competencia);
+
+      const totalDespesa = lancsObra.reduce((s,l)=>s+Number(l.valor||0),0);
+      const totalReembLanc = lancsObra.filter(l=>l.reembolsavel).reduce((s,l)=>s+Number(l.valor||0),0);
+      const totalPago = reembsObra.reduce((s,r)=>s+Number(r.valor_pago||0),0);
+      const saldo = Math.max(0, totalReembLanc - totalPago);
+      const valorObra = Number(config?.valor_obra||0);
+
+      $("finStatValorObra").textContent = finBrl(valorObra);
+      $("finStatDespesa").textContent = finBrl(totalDespesa);
+      $("finStatLancado").textContent = finBrl(totalReembLanc);
+      $("finStatReembolsado").textContent = finBrl(totalPago);
+      $("finStatSaldo").textContent = finBrl(saldo);
+
+      finRenderResumoColabs(finAgruparColaborador(lancsObra, reembsObra), obraId, competencia, config);
+      finRenderHistorico(reembsObra);
+      finRenderChart(valorObra, totalDespesa, totalReembLanc, totalPago, saldo);
+    } catch(e){
+      console.error('finCarregarTudo', e);
+      toast('Erro ao carregar financeiro.', false);
+    }
+  }
+
+  function finRenderResumoColabs(grupos, obraId, competencia, config){
+    _finResumoMap = {};
+    grupos.forEach(g=>{ _finResumoMap[g.uid] = g; });
+    const host = $("finResumoColabs");
+    if(!host) return;
+    if(!grupos.length){
+      host.innerHTML = '<div class="empty"><div class="empty-icon">💸</div><p>Nenhum lançamento reembolsável nesta competência.</p></div>';
+      return;
+    }
+    host.innerHTML = grupos.map(g=>{
+      const regra = (config?.regra_reembolso_texto || '').trim();
+      return `
+        <div class="fin-colab-card">
+          <div class="fin-colab-top">
+            <div>
+              <div class="fin-colab-nome">${finSanitize(g.nome)}</div>
+              <div class="fin-colab-sub">Competência ${finSanitize(competencia)} · ${g.itens.length} lançamento(s)</div>
+            </div>
+            <div style="text-align:right">
+              <div class="badge-status ${g.saldo>0?'warning':'active'}">${g.saldo>0?'Pendente':'Quitado'}</div>
+            </div>
+          </div>
+          <div class="fin-mini-grid">
+            <div class="fin-mini-box"><div class="lbl">Lançado</div><div class="val">${finBrl(g.totalLancado)}</div></div>
+            <div class="fin-mini-box"><div class="lbl">Reembolsado</div><div class="val">${finBrl(g.totalPago)}</div></div>
+            <div class="fin-mini-box"><div class="lbl">Saldo</div><div class="val">${finBrl(g.saldo)}</div></div>
+            <div class="fin-mini-box"><div class="lbl">Último pagamento</div><div class="val">${finFmtData(g.ultimaDataPagamento)}</div></div>
+          </div>
+          ${regra ? `<div class="fin-regra-box">📌 ${finSanitize(regra)}</div>` : ''}
+          <div class="fin-actions-row">
+            <button class="btn btn-primary sm" onclick="App.finAbrirModalReembolso('${finSanitize(g.uid)}')">💵 Registrar reembolso</button>
+          </div>
+        </div>`;
+    }).join('');
+    host.dataset.obraId = obraId;
+    host.dataset.competencia = competencia;
+  }
+
+  function finRenderHistorico(reembs=[]){
+    const host = $("finHistorico");
+    if(!host) return;
+    const lista = [...reembs].sort((a,b)=>(b.data_pagamento||'').localeCompare(a.data_pagamento||''));
+    if(!lista.length){
+      host.innerHTML = '<div class="empty"><div class="empty-icon">🧾</div><p>Nenhum reembolso registrado ainda.</p></div>';
+      return;
+    }
+    host.innerHTML = lista.map(r=>`
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-name">${finSanitize(r.colaborador_nome||'Colaborador')}</div>
+          <div class="list-item-sub">📅 ${finFmtData(r.data_pagamento)} · Competência ${finSanitize(r.competencia||'—')} ${r.observacao ? '· '+finSanitize(r.observacao) : ''}</div>
+        </div>
+        <div class="badges">
+          <span class="badge-status ${r.tipo==='total'?'active':'warning'}">${r.tipo==='total'?'Total':'Parcial'}</span>
+          <span class="badge-status user">${finBrl(r.valor_pago)}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function finRenderChart(valorObra, totalDespesa, totalReembLanc, totalPago, saldo){
+    const canvas = $("finChartResumo");
+    if(!canvas || typeof Chart === 'undefined') return;
+    if(_finChartResumo) { try{ _finChartResumo.destroy(); }catch(_){} }
+    _finChartResumo = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: ['Valor da obra','Despesa lançada','Reemb. lançado','Reembolsado','Saldo reembolso'],
+        datasets: [{
+          label: 'Financeiro',
+          data: [valorObra||0,totalDespesa||0,totalReembLanc||0,totalPago||0,saldo||0],
+          borderWidth: 1,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: { label: ctx => finBrl(ctx.parsed.y || 0) } }
+        },
+        scales: {
+          y: { beginAtZero:true, ticks: { callback: value => finBrl(value) } }
+        }
+      }
+    });
+  }
+
+  function finAbrirModalReembolso(uid){
+    if(currentRole !== 'ADMIN') return;
+    const obraId = $("finObra")?.value || '';
+    const competencia = $("finCompetencia")?.value || finCompetenciaAtual();
+    if(!obraId){ toast('Selecione a obra.', false); return; }
+    const item = _finResumoMap[uid] || { nome:'Colaborador' };
+    const nome = item.nome || 'Colaborador';
+    const modalHost = $("finModalHost");
+    if(!modalHost) return;
+    modalHost.innerHTML = `
+      <div class="modal-overlay" id="finReembolsoModal">
+        <div class="modal" style="max-width:480px">
+          <h3>Registrar reembolso</h3>
+          <div class="info-box">👤 <strong style="margin-left:4px">${finSanitize(nome)}</strong> · Competência <strong style="margin-left:4px">${finSanitize(competencia)}</strong></div>
+          <label>Valor pago (R$)</label>
+          <input type="number" id="finModalValorPago" min="0" step="0.01" placeholder="0,00">
+          <label>Data do pagamento</label>
+          <input type="date" id="finModalDataPag" value="${new Date().toISOString().slice(0,10)}">
+          <label>Observação</label>
+          <textarea id="finModalObs" rows="3" placeholder="Ex.: pagamento parcial da primeira medição."></textarea>
+          <div class="modal-footer">
+            <button class="btn btn-outline" type="button" onclick="App.finFecharModalReembolso()">Cancelar</button>
+            <button class="btn btn-primary" type="button" onclick="App.finSalvarReembolso('${finSanitize(uid)}')">Salvar</button>
+          </div>
+          <div class="msg" id="finModalMsg"></div>
+        </div>
+      </div>`;
+  }
+
+  function finFecharModalReembolso(){
+    const host = $("finModalHost");
+    if(host) host.innerHTML = '';
+  }
+
+  async function finSalvarReembolso(uid){
+    if(currentRole !== 'ADMIN') return;
+    const obraId = $("finObra")?.value || '';
+    const competencia = $("finCompetencia")?.value || finCompetenciaAtual();
+    const valorPago = parseFloat($("finModalValorPago")?.value || '0') || 0;
+    const dataPagamento = $("finModalDataPag")?.value || '';
+    const observacao = ($("finModalObs")?.value || '').trim();
+    if(!obraId){ setMsg('finModalMsg','Selecione a obra.'); return; }
+    if(valorPago <= 0){ setMsg('finModalMsg','Informe um valor válido.'); return; }
+    if(!dataPagamento){ setMsg('finModalMsg','Informe a data do pagamento.'); return; }
+    try {
+      const [lancsAll, reembsAll] = await Promise.all([finObterLancamentos(), finObterReembolsos()]);
+      const lancado = lancsAll.filter(l=>l.obra_id===obraId && l.colaborador_uid===uid && l.reembolsavel && finCompetenciaDeData(l.data)===competencia).reduce((s,l)=>s+Number(l.valor||0),0);
+      const pago = reembsAll.filter(r=>r.obra_id===obraId && r.colaborador_uid===uid && (r.competencia||'')===competencia).reduce((s,r)=>s+Number(r.valor_pago||0),0);
+      const saldo = Math.max(0, lancado - pago);
+      const tipo = valorPago >= saldo && saldo > 0 ? 'total' : 'parcial';
+      const nome = (_finResumoMap[uid]?.nome || 'Colaborador');
+      await addDoc(collection(db,'reembolsos'), {
+        obra_id: obraId,
+        obra_nome: $("finObra")?.selectedOptions?.[0]?.textContent || obraId,
+        colaborador_uid: uid,
+        colaborador_nome: nome,
+        competencia,
+        valor_pago: valorPago,
+        data_pagamento: dataPagamento,
+        tipo,
+        observacao,
+        criadoPor: currentUser?.uid || '',
+        criadoEm: serverTimestamp()
+      });
+      toast('Reembolso registrado!');
+      finFecharModalReembolso();
+      await finCarregarTudo();
+      await finCarregarResumoColaborador();
+    } catch(e){
+      console.error(e);
+      setMsg('finModalMsg','Erro ao salvar: '+e.message);
+    }
+  }
+
+  async function finCarregarResumoColaborador(){
+    const wrap = $("lancReembolsoResumoWrap");
+    const list = $("lancReembolsoResumoList");
+    if(!wrap || !list) return;
+    if(currentRole !== 'USER' || !currentUser){
+      wrap.classList.add('hidden');
+      return;
+    }
+    wrap.classList.remove('hidden');
+    const competencia = finCompetenciaAtual();
+    try {
+      const [lancsAll, reembsAll, obrasAll, cfgSnap] = await Promise.all([
+        finObterLancamentos(),
+        finObterReembolsos(),
+        getDocs(collection(db,'obras')),
+        getDocs(collection(db,'financeiro_obras'))
+      ]);
+      const obrasMap = {};
+      obrasAll.forEach(d=>obrasMap[d.id] = d.data()?.nome || d.id);
+      const cfgMap = {};
+      cfgSnap.forEach(d=>cfgMap[d.id] = d.data());
+      const meusLancs = lancsAll.filter(l=>l.colaborador_uid===currentUser.uid && l.reembolsavel && finCompetenciaDeData(l.data)===competencia);
+      const meusReembs = reembsAll.filter(r=>r.colaborador_uid===currentUser.uid && (r.competencia||'')===competencia);
+      const obras = [...new Set([...meusLancs.map(l=>l.obra_id), ...meusReembs.map(r=>r.obra_id)])].filter(Boolean);
+      if(!obras.length){
+        list.innerHTML = '<div class="empty"><div class="empty-icon">💳</div><p>Nenhum reembolso pendente neste mês.</p></div>';
+        return;
+      }
+      list.innerHTML = obras.map(obraId=>{
+        const cfg = cfgMap[obraId] || {};
+        const lancs = meusLancs.filter(l=>l.obra_id===obraId);
+        const reembs = meusReembs.filter(r=>r.obra_id===obraId);
+        const totalLancado = lancs.reduce((s,l)=>s+Number(l.valor||0),0);
+        const totalPago = reembs.reduce((s,r)=>s+Number(r.valor_pago||0),0);
+        const saldo = Math.max(0, totalLancado - totalPago);
+        const ultimo = [...reembs].sort((a,b)=>(b.data_pagamento||'').localeCompare(a.data_pagamento||''))[0];
+        const regra = (cfg.regra_reembolso_texto || '').trim();
+        const status = saldo > 0 ? 'Pendente' : 'Sem pendência';
+        return `
+          <div class="reemb-user-card" data-obra-id="${finSanitize(obraId)}" data-saldo="${saldo}" data-regra="${finSanitize(regra)}" data-lembrete="${cfg.lembrete_reembolso_ativo===false?'nao':'sim'}" data-intervalo="${Number(cfg.intervalo_lembrete_horas||3)}">
+            <div class="reemb-user-top">
+              <div>
+                <div class="reemb-user-nome">${finSanitize(obrasMap[obraId] || obraId)}</div>
+                <div class="reemb-user-sub">Competência ${finSanitize(competencia)}</div>
+              </div>
+              <div class="badge-status ${saldo>0?'warning':'active'}">${status}</div>
+            </div>
+            <div class="reemb-user-grid">
+              <div class="reemb-user-box"><div class="lbl">Lançado</div><div class="val">${finBrl(totalLancado)}</div></div>
+              <div class="reemb-user-box"><div class="lbl">Reembolsado</div><div class="val">${finBrl(totalPago)}</div></div>
+              <div class="reemb-user-box"><div class="lbl">Saldo</div><div class="val">${finBrl(saldo)}</div></div>
+              <div class="reemb-user-box"><div class="lbl">Último pagamento</div><div class="val">${finFmtData(ultimo?.data_pagamento || '')}</div></div>
+            </div>
+            ${saldo>0 && regra ? `<div class="fin-regra-box">🔔 ${finSanitize(regra)}</div>` : saldo<=0 ? `<div class="fin-regra-box">✅ Nenhum reembolso pendente nesta obra.</div>` : ''}
+          </div>`;
+      }).join('');
+    } catch(e){
+      console.error('finCarregarResumoColaborador', e);
+      list.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>Não foi possível carregar o resumo de reembolso.</p></div>';
+    }
+  }
+
+  function finExecutarLembretesReembolso(){
+    if(currentRole !== 'USER' || !currentUser) return;
+    const cards = [...document.querySelectorAll('#lancReembolsoResumoList .reemb-user-card')];
+    const competencia = finCompetenciaAtual();
+    cards.forEach(card=>{
+      const saldo = Number(card.dataset.saldo || 0);
+      const obraId = card.dataset.obraId || '';
+      const regra = card.dataset.regra || '';
+      const ativo = (card.dataset.lembrete || 'sim') === 'sim';
+      const intervalo = Math.max(1, Number(card.dataset.intervalo || 3));
+      if(!ativo || saldo <= 0 || !obraId) return;
+      const key = `go_reembolso_reminder_${currentUser.uid}_${obraId}_${competencia}`;
+      const last = Number(localStorage.getItem(key) || '0');
+      const now = Date.now();
+      if(!last || now - last >= intervalo * 60 * 60 * 1000){
+        toast(`💳 ${card.querySelector('.reemb-user-nome')?.textContent || 'Obra'}: ${regra || 'Há reembolso pendente para conferência.'}`);
+        localStorage.setItem(key, String(now));
+      }
+    });
+  }
+
+  function finIniciarLembretesReembolso(){
+    if(_finReminderTimer){ clearInterval(_finReminderTimer); _finReminderTimer = null; }
+    if(currentRole !== 'USER') return;
+    setTimeout(finExecutarLembretesReembolso, 4000);
+    _finReminderTimer = setInterval(finExecutarLembretesReembolso, 30 * 60 * 1000);
+  }
+
+  // ─────────────────────────────────────────
+  // PWA / INSTALAÇÃO COMO APP
+  // ─────────────────────────────────────────
+  function pwaCloseBanner(){ $("installAppBanner")?.classList.add('hidden'); }
+  function pwaOpenIosHelp(){ $("installIosModal")?.classList.remove('hidden'); }
+  function pwaCloseIosHelp(){ $("installIosModal")?.classList.add('hidden'); }
+  async function pwaInstallApp(){
+    if(_finDeferredPrompt){
+      try {
+        _finDeferredPrompt.prompt();
+        await _finDeferredPrompt.userChoice.catch(()=>null);
+      } catch(_) {}
+      _finDeferredPrompt = null;
+      pwaCloseBanner();
+      return;
+    }
+    if(finIsIOS()) { pwaOpenIosHelp(); return; }
+  }
+  function finConfigurarPWA(){
+    if(_finPwaInitDone) return;
+    _finPwaInitDone = true;
+    const banner = $("installAppBanner");
+    const btn = $("installAppActionBtn");
+    const dismiss = $("installAppDismissBtn");
+    const txt = $("installAppText");
+    if(btn) btn.onclick = pwaInstallApp;
+    if(dismiss) dismiss.onclick = pwaCloseBanner;
+    window.addEventListener('beforeinstallprompt', (e)=>{
+      e.preventDefault();
+      _finDeferredPrompt = e;
+      if(finIsMobile() && !finStandalone() && banner){
+        if(txt) txt.textContent = 'Instale o GO no Android para abrir como aplicativo.';
+        banner.classList.remove('hidden');
+      }
+    });
+    window.addEventListener('appinstalled', ()=>{
+      _finDeferredPrompt = null;
+      pwaCloseBanner();
+      toast('GO instalado com sucesso!');
+    });
+    if(finIsIOS() && finIsMobile() && !finStandalone() && banner){
+      if(txt) txt.textContent = 'No iPhone ou iPad, toque em Instalar para ver como adicionar à Tela de Início.';
+      banner.classList.remove('hidden');
+    }
+  }
+
   window.App = {
     // Auth
     login, logout, togglePass, changePassword,
@@ -12223,6 +12849,12 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     toggleReemb, onFileSelect, removeFile,
     saveLanc, cancelLanc, editLanc, deleteLanc, loadLancs,
     syncPendingLancs, syncPendingPontos,
+    // Financeiro / reembolso
+    finInicializarTab, finCarregarTudo, finSalvarConfigObra,
+    finAbrirModalReembolso, finFecharModalReembolso, finSalvarReembolso,
+    finCarregarResumoColaborador,
+    // PWA
+    pwaInstallApp, pwaCloseBanner, pwaOpenIosHelp, pwaCloseIosHelp,
     // Dashboard
     loadDashboard, onDashObraChange, clearDashFilters,
     // Relatórios
@@ -12304,17 +12936,10 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
   if('serviceWorker' in navigator){
     window.addEventListener('load', async function(){
       try {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        for (const reg of regs) {
-          try { await reg.unregister(); } catch(_) {}
-        }
-        if (window.caches && caches.keys) {
-          const keys = await caches.keys();
-          for (const k of keys) {
-            try { await caches.delete(k); } catch(_) {}
-          }
-        }
-      } catch(_) {}
+        await navigator.serviceWorker.register('sw.js');
+      } catch(err) {
+        console.warn('Falha ao registrar service worker do GO:', err);
+      }
     });
   }
 </script>
