@@ -12558,14 +12558,25 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
     }
   }
 
-  async function finObterLancamentos(){
-    const snap = await getDocs(collection(db,'lancamentos'));
-    return snap.docs.map(d=>({id:d.id,...d.data()}));
-  }
+  async function finObterLancamentos() {
+    try {
+        const snap = await getDocs(collection(db, 'lancamentos'));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+        console.error('finObterLancamentos', e);
+        return [];
+    }
+}
 
-  async function finObterReembolsos(){
-    const snap = await getDocs(collection(db,'reembolsos'));
-    return snap.docs.map(d=>({id:d.id,...d.data()}));
+async function finObterReembolsos() {
+    try {
+        const snap = await getDocs(collection(db, 'reembolsos'));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+        console.error('finObterReembolsos', e);
+        return [];
+    }
+}
   }
 
   function finAgruparColaborador(lancs=[], reembs=[]){
