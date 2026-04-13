@@ -12574,8 +12574,7 @@ async function finObterReembolsos() {
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch(e) {
         console.error('finObterReembolsos', e);
-        return [];
-    }
+     }
 }
   }
 
