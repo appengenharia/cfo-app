@@ -329,6 +329,10 @@
 .fin-mini-box .val,.reemb-user-box .val{font-weight:700;margin-top:4px}
 .fin-regra-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#1e40af;margin-top:10px}
 .fin-actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    /* ── Subabas Financeiro ── */
+.fin-subpanel { display: none; }
+.fin-subpanel.active { display: block; animation: fadeIn .2s ease; }
+.fin-subtabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
 .install-banner{position:fixed;left:12px;right:12px;bottom:72px;z-index:500;background:linear-gradient(135deg,#0f3460,#1a4a8a);color:#fff;border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.28);padding:14px 16px;display:flex;gap:12px;align-items:center}
 .install-banner .ib-icon{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
 .install-banner .ib-body{flex:1;min-width:0}
@@ -12691,7 +12695,15 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
       if(!sel.value && obras[0]) sel.value = obras[0].id;
     } catch(e){ console.error('finCarregarObrasSelect', e); }
   }
-
+// ── Navegação entre subabas do Financeiro ──
+function finMudarSubaba(aba) {
+  document.querySelectorAll('.fin-subtabs .admin-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.finSubaba === aba);
+  });
+  document.querySelectorAll('.fin-subpanel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'fin-sub-' + aba);
+  });
+}
   async function finInicializarTab(){
     if(currentRole !== 'ADMIN') return;
     if($("finCompetencia") && !$("finCompetencia").value) $("finCompetencia").value = finCompetenciaAtual();
@@ -12833,7 +12845,8 @@ async function finObterReembolsos() {
 
       finRenderResumoColabs(finAgruparColaborador(lancsObra, reembsObra), obraId, competencia, config);
       finRenderHistorico(reembsObra);
-      finRenderChart(valorObra, totalDespesa, totalReembLanc, totalPago, saldo);
+      // finRenderChart removido temporariamente — aguardando nova área gráfica
+     // finRenderChart(valorObra, totalDespesa, totalReembLanc, totalPago, saldo);
     } catch(e){
       console.error('finCarregarTudo', e);
       toast('Erro ao carregar financeiro.', false);
