@@ -770,68 +770,251 @@
     <div class="tab-panel" id="tab-financeiro">
       <div class="page-header"><h1>Financeiro</h1><p>Controle financeiro por obra com reembolso manual de colaboradores.</p></div>
 
-      <div class="card">
-        <div class="card-header"><div><h3>Configuração da obra</h3><p>Cadastre o valor da obra e a regra manual do reembolso.</p></div></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
-          <div style="flex:1;min-width:220px">
-            <label style="margin-top:0">Obra</label>
-            <select id="finObra" onchange="App.finCarregarTudo()">
-              <option value="">— Selecione a obra —</option>
-            </select>
-          </div>
-          <div style="width:180px">
-            <label style="margin-top:0">Competência</label>
-            <input type="month" id="finCompetencia" onchange="App.finCarregarTudo()">
-          </div>
-          <div style="width:220px">
-            <label style="margin-top:0">Valor da obra (R$)</label>
-            <input type="number" id="finValorObra" min="0" step="0.01" placeholder="0,00">
-          </div>
-        </div>
-        <label>Regra manual do reembolso</label>
-        <textarea id="finRegraTexto" rows="3" placeholder="Ex.: Reembolso desta obra ocorre após conferência interna e liberação administrativa."></textarea>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
-          <div style="width:220px">
-            <label style="margin-top:0">Lembrete ativo</label>
-            <select id="finLembreteAtivo">
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
-          <div style="width:220px">
-            <label style="margin-top:0">Intervalo do lembrete (horas)</label>
-            <input type="number" id="finIntervaloHoras" min="1" step="1" value="3">
-          </div>
-          <div>
-            <button class="btn btn-primary" onclick="App.finSalvarConfigObra()">💾 Salvar configuração</button>
-          </div>
-        </div>
-        <div class="msg" id="finConfigMsg"></div>
+      <!-- SUBSTITUIR DENTRO DE: <div class="tab-panel" id="tab-financeiro"> -->
+<!-- DO PRIMEIRO <div class="card"> ATUAL ATÉ: <div id="finModalHost"></div> -->
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Filtros do financeiro</h3>
+      <p>Selecione a obra e a competência para carregar os módulos financeiros.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+    <div style="flex:1;min-width:220px">
+      <label style="margin-top:0">Obra</label>
+      <select id="finObra" onchange="App.finCarregarTudo()">
+        <option value="">— Selecione a obra —</option>
+      </select>
+    </div>
+
+    <div style="width:180px">
+      <label style="margin-top:0">Competência</label>
+      <input type="month" id="finCompetencia" onchange="App.finCarregarTudo()">
+    </div>
+  </div>
+</div>
+
+<div class="admin-tabs fin-subtabs">
+  <button type="button" class="admin-tab-btn active" data-fin-subaba="resumo" onclick="App.finMudarSubaba('resumo')">💰 Resumo Financeiro</button>
+  <button type="button" class="admin-tab-btn" data-fin-subaba="medicoes" onclick="App.finMudarSubaba('medicoes')">📥 Medições / Entradas</button>
+  <button type="button" class="admin-tab-btn" data-fin-subaba="fixas" onclick="App.finMudarSubaba('fixas')">📌 Despesas Fixas</button>
+  <button type="button" class="admin-tab-btn" data-fin-subaba="reembolso" onclick="App.finMudarSubaba('reembolso')">💳 Reembolso</button>
+</div>
+
+<div class="fin-subpanel active" id="fin-sub-resumo">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Resumo Financeiro</h3>
+        <p>Painel consolidado do financeiro por obra.</p>
+      </div>
+    </div>
+    <div class="empty fin-empty-inline">
+      <div class="empty-icon">💰</div>
+      <p>Use as subabas para gerenciar entradas, despesas fixas e reembolsos da obra.</p>
+    </div>
+  </div>
+</div>
+
+<div class="fin-subpanel" id="fin-sub-medicoes">
+  <div class="fin-grid-kpi fin-grid-kpi-medicoes">
+    <div class="stat-card c-success">
+      <div class="stat-label">Total recebido</div>
+      <div class="stat-value" id="finMedStatTotal">R$ 0,00</div>
+    </div>
+
+    <div class="stat-card c-accent">
+      <div class="stat-label">Última medição</div>
+      <div class="stat-value" id="finMedStatUltima">R$ 0,00</div>
+      <div class="fin-kpi-sub" id="finMedStatUltimaData">—</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Medições registradas</div>
+      <div class="stat-value" id="finMedStatCount">0</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Medições / Entradas</h3>
+        <p>Receitas recebidas da obra, sem filtro mensal para preservar o acumulado total.</p>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="App.finAbrirModalMedicao()">＋ Nova Entrada</button>
+    </div>
+
+    <div id="finMedicoesEmpty" class="empty fin-empty-inline">
+      <div class="empty-icon">📥</div>
+      <p>Selecione uma obra para ver as entradas.</p>
+    </div>
+
+    <div class="fin-table-wrap hidden" id="finMedicoesTableWrap">
+      <table class="dash-table fin-medicoes-table">
+        <thead>
+          <tr>
+            <th>Competência</th>
+            <th>Tipo</th>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Data</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="finMedicoesBody"></tbody>
+        <tfoot>
+          <tr class="fin-total-row">
+            <td colspan="3">TOTAL ACUMULADO</td>
+            <td id="finMedicoesTotalAcumulado">R$ 0,00</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="fin-subpanel" id="fin-sub-fixas">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Despesas Fixas</h3>
+        <p>Espaço reservado para a próxima etapa do financeiro por obra.</p>
+      </div>
+    </div>
+    <div class="empty fin-empty-inline">
+      <div class="empty-icon">📌</div>
+      <p>Nenhuma rotina de despesas fixas foi adicionada nesta parte ainda.</p>
+    </div>
+  </div>
+</div>
+
+<div class="fin-subpanel" id="fin-sub-reembolso">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Configuração da obra</h3>
+        <p>Cadastre o valor da obra e a regra manual do reembolso.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+      <div style="width:220px">
+        <label style="margin-top:0">Valor da obra (R$)</label>
+        <input type="number" id="finValorObra" min="0" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+
+    <label>Regra manual do reembolso</label>
+    <textarea id="finRegraTexto" rows="3" placeholder="Ex.: Reembolso desta obra ocorre após conferência interna e liberação administrativa."></textarea>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+      <div style="width:220px">
+        <label style="margin-top:0">Lembrete ativo</label>
+        <select id="finLembreteAtivo">
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
+        </select>
       </div>
 
-      <div class="fin-grid-kpi">
-        <div class="stat-card"><div class="stat-label">Valor da obra</div><div class="stat-value" id="finStatValorObra">R$ 0,00</div></div>
-        <div class="stat-card c-accent"><div class="stat-label">Despesa lançada</div><div class="stat-value" id="finStatDespesa">R$ 0,00</div></div>
-        <div class="stat-card c-warning"><div class="stat-label">Reemb. lançado</div><div class="stat-value" id="finStatLancado">R$ 0,00</div></div>
-        <div class="stat-card"><div class="stat-label">Reembolsado</div><div class="stat-value" id="finStatReembolsado">R$ 0,00</div></div>
-        <div class="stat-card c-success"><div class="stat-label">Saldo reembolso</div><div class="stat-value" id="finStatSaldo">R$ 0,00</div></div>
+      <div style="width:220px">
+        <label style="margin-top:0">Intervalo do lembrete (horas)</label>
+        <input type="number" id="finIntervaloHoras" min="1" step="1" value="3">
       </div>
 
-      <div class="card">
-        <div class="card-header"><div><h3>Resumo por colaborador</h3><p>Pagamento manual parcial ou total por obra e competência.</p></div></div>
-        <div id="finResumoColabs"><div class="empty"><div class="empty-icon">💼</div><p>Selecione uma obra para começar.</p></div></div>
+      <div>
+        <button class="btn btn-primary" onclick="App.finSalvarConfigObra()">💾 Salvar configuração</button>
       </div>
+    </div>
 
-      <div class="card">
-        <div class="card-header"><div><h3>Gráfico</h3><p>Comparativo entre lançado, reembolsado e saldo.</p></div></div>
-        <canvas id="finChartResumo" height="110"></canvas>
-      </div>
+    <div class="msg" id="finConfigMsg"></div>
+  </div>
 
-      <div class="card">
-        <div class="card-header"><div><h3>Histórico de reembolsos</h3><p>Pagamentos lançados manualmente pelo administrador.</p></div></div>
-        <div id="finHistorico"><div class="empty"><div class="empty-icon">🧾</div><p>Nenhum reembolso registrado ainda.</p></div></div>
+  <div class="fin-grid-kpi">
+    <div class="stat-card"><div class="stat-label">Valor da obra</div><div class="stat-value" id="finStatValorObra">R$ 0,00</div></div>
+    <div class="stat-card c-accent"><div class="stat-label">Despesa lançada</div><div class="stat-value" id="finStatDespesa">R$ 0,00</div></div>
+    <div class="stat-card c-warning"><div class="stat-label">Reemb. lançado</div><div class="stat-value" id="finStatLancado">R$ 0,00</div></div>
+    <div class="stat-card"><div class="stat-label">Reembolsado</div><div class="stat-value" id="finStatReembolsado">R$ 0,00</div></div>
+    <div class="stat-card c-success"><div class="stat-label">Saldo reembolso</div><div class="stat-value" id="finStatSaldo">R$ 0,00</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Resumo por colaborador</h3>
+        <p>Pagamento manual parcial ou total por obra e competência.</p>
       </div>
-      <div id="finModalHost"></div>
+    </div>
+    <div id="finResumoColabs"><div class="empty"><div class="empty-icon">💼</div><p>Selecione uma obra para começar.</p></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Gráfico</h3>
+        <p>Comparativo entre lançado, reembolsado e saldo.</p>
+      </div>
+    </div>
+    <canvas id="finChartResumo" height="110"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Histórico de reembolsos</h3>
+        <p>Pagamentos lançados manualmente pelo administrador.</p>
+      </div>
+    </div>
+    <div id="finHistorico"><div class="empty"><div class="empty-icon">🧾</div><p>Nenhum reembolso registrado ainda.</p></div></div>
+  </div>
+
+  <div id="finModalHost"></div>
+</div>
+
+<div class="modal-overlay hidden" id="modalMedicao">
+  <div class="modal" style="max-width:520px">
+    <h3 id="modalMedicaoTitle">Nova entrada</h3>
+
+    <input type="hidden" id="finMedicaoEditId">
+
+    <label>Tipo</label>
+    <select id="finMedicaoTipo">
+      <option value="medicao">📐 Medição</option>
+      <option value="aditivo">➕ Aditivo de Contrato</option>
+      <option value="antecipacao">💵 Antecipação</option>
+      <option value="outros">📎 Outros</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label>Competência</label>
+        <input type="month" id="finMedicaoCompetencia">
+      </div>
+      <div>
+        <label>Data do recebimento</label>
+        <input type="date" id="finMedicaoData">
+      </div>
+    </div>
+
+    <label>Descrição</label>
+    <input type="text" id="finMedicaoDescricao" placeholder="Ex: Medição nº 3 - Fundações">
+
+    <label>Valor (R$)</label>
+    <input type="number" id="finMedicaoValor" min="0" step="0.01" placeholder="0,00">
+
+    <label>Observação</label>
+    <textarea id="finMedicaoObs" rows="3" placeholder="Opcional"></textarea>
+
+    <div class="msg" id="finMedicaoMsg"></div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" onclick="App.finFecharModalMedicao()">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btnSalvarMedicao" onclick="App.finSalvarMedicao()">Salvar Entrada</button>
+    </div>
+  </div>
+</div>
     </div>
 
     <!-- ── RELATÓRIOS ── -->
