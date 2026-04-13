@@ -732,8 +732,12 @@
             <input type="hidden" id="lancReemb" value="nao">
           </div>
         </div>
-        <label id="lancComprLabel">Comprovante (foto ou PDF)</label>
-        <div class="upload-area" id="uploadArea" onclick="document.getElementById('lancFile').click()">
+        <label id="lancComprLabel">        <label id="lancComprLabel">
+          Comprovante (foto ou PDF)
+          <span style="background:linear-gradient(135deg,#0f3460,#e94560);color:#fff;font-size:.68rem;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:600">🤖 IA lê automaticamente</span>
+        </label></label>
+        <div class="upload-area" id="uploadArea" 
+          onclick="document.getElementById('lancFile').click()">
           <div class="upload-icon">📎</div>
           <div class="upload-text">Clique para anexar foto do comprovante</div>
           <div class="upload-sub">Máx. 10MB — JPG ou PNG</div>
@@ -2467,6 +2471,7 @@
     if(tab==="admin")       { loadObras(); fillObraSelect(); }
     if(tab==="lancamentos") { fillLancObras(); loadLancs(); setTodayDate(); }
     if(tab==="dashboard")   { fillDashFilters().then(()=>loadDashboard()); _rhVerificarExamesVencimento(); }
+    if(tab==="financeiro")  { finInicializarTab(); }
     if(tab==="relatorios")  { fillRelatorioFiltros(); }
     if(tab==="ponto")       { fillPontoFiltros(); }
     if(tab==="rh")          { rhCarregarLista(); _rhVerificarExamesVencimento(); }
@@ -5580,8 +5585,122 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       <span style="font-size:1.4rem">🖼️</span>
       <span class="file-name">${file.name}</span>
       <button class="file-remove" onclick="App.removeFile()" title="Remover">✕</button>`;
+    // ── IA: leitura automática da nota fiscal / recibo ──
+    analisarNotaIA(file);
   }
+  // ──────────────────────────────────────────────────────────────
+  // IA: leitura automática de notas fiscais e recibos
+  // Suporte a: notas impressas, cupons fiscais, recibos manuscritos
+  // ──────────────────────────────────────────────────────────────
+  async function analisarNotaIA(file) {
+    // Criar indicador visual de carregamento
+    const prev = $("filePreview");
+    const indicador = document.createElement("div");
+    indicador.id = "iaLeituraIndicador";
+    indicador.className = "ia-nota-indicator loading";
+    indicador.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;flex-shrink:0"></div><span>🤖 IA lendo a nota fiscal...</span>`;
+    prev.insertAdjacentElement("afterend", indicador);
 
+    try {
+      // Converter imagem para base64
+      const base64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(",")[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+
+      const mediaType = file.type || "image/jpeg";
+
+      // Chamar Claude API com visão — prompt otimizado para manuscritos e impressos
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: mediaType, data: base64 }
+              },
+              {
+                type: "text",
+                text: `Você é especialista em leitura de documentos fiscais brasileiros.
+Analise este comprovante — pode ser nota fiscal impressa, cupom fiscal, recibo de restaurante,
+comprovante de posto de combustível, recibo de hotel, recibo escrito à mão, caderno de anotações
+ou qualquer tipo de comprovante de pagamento, impresso ou manuscrito.
+
+Para documentos manuscritos: tente identificar os valores numéricos, datas e o tipo de
+estabelecimento mesmo que a caligrafia seja difícil. Priorize números sobre texto.
+
+Retorne APENAS um JSON válido, sem markdown, sem explicações:
+{
+  "valor": número com ponto decimal (ex: 150.90) ou null se não encontrar,
+  "data": formato YYYY-MM-DD ou null se não encontrar,
+  "descricao": nome do estabelecimento, serviço ou descrição do gasto (máx 60 chars),
+  "categoria": uma das opções exatas: "Hospedagem" | "Combustível" | "Locação de automóvel" | "Alimentação" | "Passagem de avião" | "Ferramentas" | "Materiais de construção" | "Outros gastos",
+  "numero_nota": número da nota, cupom ou recibo (somente o número) ou null,
+  "confianca": "alta" | "media" | "baixa"
+}`
+              }
+            ]
+          }]
+        })
+      });
+
+      if(!resp.ok) throw new Error("API status " + resp.status);
+
+      const data = await resp.json();
+      const txt = (data.content || []).map(b => b.text || "").join("").trim();
+      const resultado = JSON.parse(txt.replace(/```json|```/g, "").trim());
+
+      // Preencher campos automaticamente (sem desabilitar edição manual)
+      let preenchidos = [];
+
+      if(resultado.valor && resultado.valor > 0) {
+        $("lancValor").value = resultado.valor;
+        preenchidos.push("valor");
+      }
+      if(resultado.data) {
+        $("lancData").value = resultado.data;
+        preenchidos.push("data");
+      }
+      if(resultado.descricao) {
+        const desc = resultado.numero_nota
+          ? `${resultado.descricao} — NF ${resultado.numero_nota}`
+          : resultado.descricao;
+        $("lancDesc").value = desc;
+        preenchidos.push("descrição");
+      }
+      if(resultado.categoria) {
+        $("lancCategoria").value = resultado.categoria;
+        preenchidos.push("categoria");
+      }
+
+      // Aviso de confiança baseado no tipo de documento
+      const avisoConfianca = resultado.confianca === "baixa"
+        ? " ⚠️ Documento manuscrito — confira com atenção."
+        : resultado.confianca === "media"
+        ? " Confira os dados antes de salvar."
+        : " Dados conferidos.";
+
+      indicador.className = "ia-nota-indicator success";
+      indicador.innerHTML = preenchidos.length > 0
+        ? `✅ IA preencheu: ${preenchidos.join(", ")}.${avisoConfianca}`
+        : `⚠️ Não encontrei dados suficientes. Preencha manualmente.`;
+
+    } catch(e) {
+      console.warn("analisarNotaIA:", e);
+      indicador.className = "ia-nota-indicator error";
+      indicador.innerHTML = `⚠️ Não foi possível ler a nota automaticamente. Preencha manualmente.`;
+    }
+
+    // Remove o indicador após 8 segundos
+    setTimeout(() => { if(indicador.parentNode) indicador.remove(); }, 8000);
+  }
   function removeFile() {
     selectedFile = null;
     $("lancFile").value = "";
@@ -13145,6 +13264,12 @@ Todos os dados preenchidos e documentos vinculados serão removidos. Esta ação
           #vGrid3col { grid-template-columns: 1fr 1fr !important; }
           #vGrid3col > div:last-child { grid-column: 1 / -1; }
         }
+        /* ── IA: Indicador de leitura de nota fiscal ── */
+.ia-nota-indicator{display:flex;align-items:center;gap:8px;border-radius:10px;padding:9px 14px;margin-top:8px;font-size:.82rem;transition:all .4s;}
+.ia-nota-indicator.loading{background:#eff6ff;border:1.5px solid #bfdbfe;color:#1e40af;}
+.ia-nota-indicator.success{background:#ecfdf5;border:1.5px solid #6ee7b7;color:#065f46;}
+.ia-nota-indicator.warning{background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e;}
+.ia-nota-indicator.error{background:#fef9ec;border:1.5px solid #fcd34d;color:#92400e;}
       </style>
     </div><!-- /scroll -->
 
