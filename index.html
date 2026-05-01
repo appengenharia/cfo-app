@@ -740,12 +740,24 @@
           Comprovante (foto ou PDF)
           <span style="background:linear-gradient(135deg,#0f3460,#e94560);color:#fff;font-size:.68rem;padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:600">🤖 IA lê automaticamente</span>
         </label></label>
-        <div class="upload-area" id="uploadArea" 
-          onclick="document.getElementById('lancFile').click()">
-          <div class="upload-icon">📎</div>
-          <div class="upload-text">Clique para anexar foto do comprovante</div>
-          <div class="upload-sub">Máx. 10MB — JPG ou PNG</div>
-          <input type="file" id="lancFile" accept="image/*" style="display:none" onchange="App.onFileSelect()">
+    <div class="upload-area" id="uploadArea">
+  <div class="upload-icon">📎</div>
+  <div class="upload-text">Anexar comprovante</div>
+  <div style="display:flex; gap:10px; margin-top:10px; justify-content:center; flex-wrap:wrap;">
+    <button type="button" class="btn btn-outline sm" onclick="document.getElementById('lancFileCamera').click()">
+      📷 Tirar Foto
+    </button>
+    <button type="button" class="btn btn-outline sm" onclick="document.getElementById('lancFileArquivo').click()">
+      📁 Escolher Arquivo
+    </button>
+  </div>
+  <div class="upload-sub">Máx. 10MB · JPG, PNG ou PDF</div>
+</div>
+          <!-- Input para câmera (abre diretamente a câmera) -->
+          <input type="file" id="lancFileCamera" accept="image/*" capture="environment" style="display:none" onchange="App.onFileSelect('lancFileCamera')">
+
+          <!-- Input para arquivo/galeria (abre explorador de arquivos) -->
+          <input type="file" id="lancFileArquivo" accept="image/*,application/pdf" style="display:none" onchange="App.onFileSelect('lancFileArquivo')">
         </div>
         <div id="filePreview" class="hidden"></div>
         <div style="display:flex;gap:10px;margin-top:20px">
@@ -5760,8 +5772,9 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("reembSim").classList.toggle("active-opt", novo === "sim");
   }
 
-  function onFileSelect() {
-    const file = $("lancFile").files[0];
+  function onFileSelect(inputId) {
+  inputId = inputId || "lancFileArquivo";
+  const file = $(inputId).files[0];
     if(!file) return;
     if(file.size > 10 * 1024 * 1024) { toast("Arquivo muito grande (máx. 10MB)", false); return; }
     if(!file.type.startsWith("image/")) { toast("Apenas imagens são aceitas (JPG, PNG)", false); return; }
@@ -5890,7 +5903,8 @@ Retorne APENAS um JSON válido, sem markdown, sem explicações:
   }
   function removeFile() {
     selectedFile = null;
-    $("lancFile").value = "";
+    $("lancFileCamera").value = "";
+$("lancFileArquivo").value = "";
     const prev = $("filePreview");
     prev.className = "hidden";
     prev.innerHTML = "";
