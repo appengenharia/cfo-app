@@ -5874,8 +5874,10 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
       if(selectedFile) {
         comprovante = await uploadFile();
         if(!comprovante) { setMsg("lancMsg","Erro ao enviar arquivo. Tente novamente."); btn.disabled=false; btn.textContent="💾 Salvar Despesa"; return; }
-      }
-
+      } else if (editingLancId) {
+        const lancExistente = allLancs.find(x => x.id === editingLancId);
+        comprovante = lancExistente?.comprovante || null;
+     }
       const obraDoc = await getDoc(doc(db,"obras",obra));
       lancData.obra_nome  = obraDoc.exists() ? obraDoc.data().nome : obra;
       lancData.comprovante = comprovante;
@@ -5931,6 +5933,20 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     $("lancReemb").value = reemb;
     $("reembNao").classList.toggle("active-opt", reemb==="nao");
     $("reembSim").classList.toggle("active-opt", reemb==="sim");
+        // Mostrar comprovante existente
+    selectedFile = null;
+    const prev = $("filePreview");
+    if (l.comprovante?.url) {
+        prev.className = "file-preview";
+        prev.innerHTML = `<span style="font-size:1.4rem">🖼️</span>
+            <span class="file-name">${l.comprovante.nome || 'Comprovante salvo'}</span>
+            <a href="${l.comprovante.url}" target="_blank" style="font-size:.78rem;color:var(--brand)">Ver atual</a>
+            <button class="file-remove" onclick="App.removeFile()" title="Remover">✕</button>`;
+    } else {
+        prev.className = "hidden";
+        prev.innerHTML = "";
+    }
+    formLancCard.scrollIntoView({ behavior: "smooth" }); // ← linha já existia
     $("formLancCard").scrollIntoView({behavior:"smooth"});
   }
 
