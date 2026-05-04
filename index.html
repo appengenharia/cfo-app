@@ -5788,26 +5788,35 @@ Retorne APENAS JSON válido, sem markdown, sem texto adicional, sem explicaçõe
     function removeFile() {
     selectedFile = null;
     $("lancFileCamera").value = "";
-$("lancFileArquivo").value = "";
+    $("lancFileArquivo").value = "";
     const prev = $("filePreview");
     prev.className = "hidden";
     prev.innerHTML = "";
   }
 
-  async function uploadFile() {
-    if(!selectedFile) return null;
-    const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
-    const fd = new FormData();
-    fd.append("file", selectedFile);
-    fd.append("upload_preset", CLOUDINARY_PRESET);
-    fd.append("folder", "go");
-    try {
-      const r = await fetch(url, {method:"POST", body:fd});
-      const d = await r.json();
-      if(d.error) { console.error("Cloudinary error:", d.error); return null; }
-      return { url: d.secure_url, tipo: "imagem", nome: selectedFile.name };
-    } catch(e) { console.error("Upload error:", e); return null; }
+ async function uploadFile() {
+  if (!selectedFile) return null;
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+  const fd = new FormData();
+  fd.append("file", selectedFile);
+  fd.append("upload_preset", CLOUDINARY_PRESET);
+  fd.append("folder", "go");
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const r = await fetch(url, { method: "POST", body: fd, signal: controller.signal });
+    clearTimeout(timeoutId);
+    const d = await r.json();
+    if (d.error) { console.error("Cloudinary error", d.error); return null; }
+    return { url: d.secure_url, tipo: "imagem", nome: selectedFile.name };
+  } catch(e) {
+    clearTimeout(timeoutId);
+    console.error("Upload error", e);
+    return null;
   }
+}
 
   function setTodayDate() {
     const d = $("lancData");
